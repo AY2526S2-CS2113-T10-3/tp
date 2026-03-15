@@ -2,6 +2,7 @@ package seedu.pharmatracker.parser;
 
 import seedu.pharmatracker.command.AddCommand;
 import seedu.pharmatracker.command.Command;
+import seedu.pharmatracker.command.ListCommand;
 import seedu.pharmatracker.data.Inventory;
 
 public class Parser {
@@ -30,8 +31,8 @@ public class Parser {
             break;
 
         case "list":
-            inventory.listMedications();
-            break;
+            System.out.println("List command triggered.");
+            return new ListCommand();
 
         case "find":
             System.out.println("Find command triggered.");

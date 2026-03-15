@@ -25,16 +25,13 @@ public class PharmaTracker {
         assert ui != null : "UI should not be null";
         // assert parser != null : "Parser should not be null";
         assert inventory != null : "Inventory should not be null";
-        // logger.log(Level.INFO, "PharmaTracker starting up");
+        logger.log(Level.INFO, "PharmaTracker starting up");
         ui.printWelcomeMessage();
         while (true) {
             String fullCommand = ui.readCommand();
             Command c = parse(fullCommand);
             c.execute(inventory);
-            // Command c = parse(fullCommand);
-            // c.execute(inventory);
-            // logger.log(Level.INFO, "Command received: " + fullCommand);
-            // parser.parseCommand(fullCommand);
+            logger.log(Level.INFO, "Command received: " + fullCommand);
         }
     }
 
