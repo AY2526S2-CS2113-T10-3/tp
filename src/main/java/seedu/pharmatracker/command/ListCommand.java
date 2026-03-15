@@ -16,11 +16,8 @@ public class ListCommand extends Command {
         }
         for (int i = 0; i < medicationList.size(); i++) {
             Medication med = medicationList.get(i);
-            System.out.println((i + 1) + ". " + med.getName()
-                    + " | Dosage: " + med.getDosage()
-                    + " | Qty: " + med.getQuantity()
-                    + " | Expiry: " + med.getExpiryDate()
-                    + " | Tag: " + med.getTag());
+            System.out.println((i + 1) + ". " + med.toString());
         }
+
     }
 }
