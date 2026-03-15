@@ -3,6 +3,7 @@ package seedu.pharmatracker.parser;
 import seedu.pharmatracker.command.AddCommand;
 import seedu.pharmatracker.command.Command;
 import seedu.pharmatracker.command.ListCommand;
+import seedu.pharmatracker.command.SortCommand;
 import seedu.pharmatracker.data.Inventory;
 
 public class Parser {
@@ -81,8 +82,8 @@ public class Parser {
             break;
 
         case "sort":
-            inventory.sortByExpiryDate();
-            break;
+            System.out.println("Sort command triggered.");
+            return new SortCommand();
 
         case "label":
             System.out.println("Label command triggered.");
