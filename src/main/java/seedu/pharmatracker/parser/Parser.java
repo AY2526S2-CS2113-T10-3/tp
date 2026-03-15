@@ -74,7 +74,7 @@ public class Parser {
             break;
 
         case "sort":
-            System.out.println("Sort command triggered.");
+            inventory.sortByExpiryDate();
             break;
 
         case "label":
