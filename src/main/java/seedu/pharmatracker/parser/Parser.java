@@ -2,12 +2,19 @@ package seedu.pharmatracker.parser;
 
 import seedu.pharmatracker.command.AddCommand;
 import seedu.pharmatracker.command.Command;
+import seedu.pharmatracker.data.Inventory;
 
 public class Parser {
+    private static Inventory inventory;
+
+    public Parser(Inventory inventory) {
+        this.inventory = inventory;
+    }
+
     public static Command parse(String userInput) {
         String[] inputParts = userInput.trim().split("\\s+", 2);
         String commandWord = inputParts[0].toLowerCase();
-        String arguments = inputParts.length > 1 ? inputParts[1] : "";
+        String arguments = (inputParts.length > 1) ? inputParts[1] : "";
 
         switch (commandWord) {
         case "add":
@@ -23,7 +30,7 @@ public class Parser {
             break;
 
         case "list":
-            System.out.println("List command triggered.");
+            inventory.listMedications();
             break;
 
         case "find":
