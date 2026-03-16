@@ -67,4 +67,40 @@ public class ListCommandTest {
         new ListCommand().execute(inventory);
         assertFalse(out.toString().contains("| Tag:"));
     }
+
+    @Test
+    public void execute_nonEmptyInventory_printsHeaderAndFooter() {
+        Inventory inventory = new Inventory();
+        inventory.addMedication(new Medication("Aspirin", "100mg", 50, "2027-01-01", "pain"));
+        new ListCommand().execute(inventory);
+        String output = out.toString();
+        assertTrue(output.contains("PharmaTracker Inventory:"));
+        assertTrue(output.contains("Total Medications: 1"));
+    }
+
+    @Test
+    public void execute_lowStockMedication_printsLowStockFlag() {
+        Inventory inventory = new Inventory();
+        inventory.addMedication(new Medication("Aspirin", "100mg", 5, "2027-01-01", "pain"));
+        new ListCommand().execute(inventory);
+        assertTrue(out.toString().contains("[LOW STOCK]"));
+    }
+
+    @Test
+    public void execute_normalStockMedication_noLowStockFlag() {
+        Inventory inventory = new Inventory();
+        inventory.addMedication(new Medication("Aspirin", "100mg", 50, "2027-01-01", "pain"));
+        new ListCommand().execute(inventory);
+        assertFalse(out.toString().contains("[LOW STOCK]"));
+    }
+
+    @Test
+    public void execute_multipleMedications_correctTotalCount() {
+        Inventory inventory = new Inventory();
+        inventory.addMedication(new Medication("Aspirin", "100mg", 50, "2027-01-01", "pain"));
+        inventory.addMedication(new Medication("Paracetamol", "500mg", 20, "2026-06-01", "fever"));
+        inventory.addMedication(new Medication("Ibuprofen", "200mg", 3, "2026-03-01", "pain"));
+        new ListCommand().execute(inventory);
+        assertTrue(out.toString().contains("Total Medications: 3"));
+    }
 }
