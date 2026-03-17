@@ -16,6 +16,14 @@ public class Inventory {
         medicationCount++;
     }
 
+    public void removeMedication(Medication medication) {
+        medications.remove(medication);
+        medicationCount--;
+    }
+
+    public int getMedicationCount() {
+        return medicationCount;
+    }
     public ArrayList<Medication> getMedications() {
         return this.medications;
     }
