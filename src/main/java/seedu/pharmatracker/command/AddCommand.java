@@ -33,6 +33,7 @@ public class AddCommand extends Command {
                       String dosageForm, String manufacturer, String directions,
                       String frequency, String route, String maxDailyDose,
                       ArrayList<String> warnings) {
+
         this.name = name;
         this.dosage = dosage;
         this.quantity = quantity;
@@ -50,28 +51,19 @@ public class AddCommand extends Command {
     @Override
     public void execute(Inventory inventory, Ui ui) {
         Medication med = new Medication(name, dosage, quantity, expiryDate, tag);
-        if (!dosageForm.isEmpty()) {
-            med.setDosageForm(dosageForm);
-        }
-        if (!manufacturer.isEmpty()) {
-            med.setManufacturer(manufacturer);
-        }
-        if (!directions.isEmpty()) {
-            med.setDirections(directions);
-        }
-        if (!frequency.isEmpty()) {
-            med.setFrequency(frequency);
-        }
-        if (!route.isEmpty()) {
-            med.setRoute(route);
-        }
-        if (!maxDailyDose.isEmpty()) {
-            med.setMaxDailyDose(maxDailyDose);
-        }
+
+        med.setDosageForm(dosageForm);
+        med.setManufacturer(manufacturer);
+        med.setDirections(directions);
+        med.setFrequency(frequency);
+        med.setRoute(route);
+        med.setMaxDailyDose(maxDailyDose);
+
         for (String warning : warnings) {
             med.addWarning(warning);
         }
-        inventory.addMedication(med);
-    }
 
+        inventory.addMedication(med);
+        ui.printAddedMessage(med, inventory);
+    }
 }
