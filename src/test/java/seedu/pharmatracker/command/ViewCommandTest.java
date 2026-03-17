@@ -10,11 +10,13 @@ import seedu.pharmatracker.data.Medication;
 import seedu.pharmatracker.data.Inventory;
 import seedu.pharmatracker.exceptions.PharmaTrackerException;
 import seedu.pharmatracker.parser.Parser;
+import seedu.pharmatracker.ui.Ui;
 
 public class ViewCommandTest {
     @Test
     public void viewCommand_validIndex_printsDetails() {
         Inventory inventory = new Inventory();
+        Ui ui = new Ui();
         Medication med = new Medication("Ibuprofen", "400mg", 50, "2026-06-15", "painkiller");
         med.setDosageForm("Tablet");
         med.setManufacturer("PharmaCorp Ltd.");
@@ -28,7 +30,7 @@ public class ViewCommandTest {
 
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outContent));
-        new ViewCommand(1).execute(inventory);
+        new ViewCommand(1).execute(inventory, ui);
         System.setOut(System.out);
 
         String output = outContent.toString();
@@ -48,11 +50,12 @@ public class ViewCommandTest {
     @Test
     public void viewCommand_noOptionalFields_printsNA() {
         Inventory inventory = new Inventory();
+        Ui ui = new Ui();
         inventory.addMedication(new Medication("Aspirin", "100mg", 50, "2027-01-01", "painkiller"));
 
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outContent));
-        new ViewCommand(1).execute(inventory);
+        new ViewCommand(1).execute(inventory, ui);
         System.setOut(System.out);
 
         String output = outContent.toString();
@@ -64,11 +67,12 @@ public class ViewCommandTest {
     @Test
     public void viewCommand_invalidIndexTooHigh_printsError() {
         Inventory inventory = new Inventory();
+        Ui ui = new Ui();
         inventory.addMedication(new Medication("Aspirin", "100mg", 50, "2027-01-01", "painkiller"));
 
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outContent));
-        new ViewCommand(5).execute(inventory);
+        new ViewCommand(5).execute(inventory, ui);
         System.setOut(System.out);
 
         String output = outContent.toString();
@@ -78,11 +82,12 @@ public class ViewCommandTest {
     @Test
     public void viewCommand_invalidIndexZero_printsError() {
         Inventory inventory = new Inventory();
+        Ui ui = new Ui();
         inventory.addMedication(new Medication("Aspirin", "100mg", 50, "2027-01-01", "painkiller"));
 
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outContent));
-        new ViewCommand(0).execute(inventory);
+        new ViewCommand(0).execute(inventory, ui);
         System.setOut(System.out);
 
         String output = outContent.toString();
@@ -91,12 +96,13 @@ public class ViewCommandTest {
 
     @Test
     public void viewCommand_negativeIndex_printsError() {
+        Ui ui = new Ui();
         Inventory inventory = new Inventory();
         inventory.addMedication(new Medication("Aspirin", "100mg", 50, "2027-01-01", "painkiller"));
 
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outContent));
-        new ViewCommand(-1).execute(inventory);
+        new ViewCommand(-1).execute(inventory, ui);
         System.setOut(System.out);
 
         String output = outContent.toString();
@@ -106,10 +112,11 @@ public class ViewCommandTest {
     @Test
     public void viewCommand_emptyInventory_printsEmpty() {
         Inventory inventory = new Inventory();
+        Ui ui = new Ui();
 
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outContent));
-        new ViewCommand(1).execute(inventory);
+        new ViewCommand(1).execute(inventory, ui);
         System.setOut(System.out);
 
         String output = outContent.toString();
@@ -119,6 +126,7 @@ public class ViewCommandTest {
     @Test
     public void viewCommand_partialOptionalFields_showsSetFieldsAndNA() {
         Inventory inventory = new Inventory();
+        Ui ui = new Ui();
         Medication med = new Medication("Paracetamol", "500mg", 100, "2026-12-31", "painkiller");
         med.setDosageForm("Tablet");
         med.setRoute("Oral");
@@ -126,7 +134,7 @@ public class ViewCommandTest {
 
         ByteArrayOutputStream outContent = new ByteArrayOutputStream();
         System.setOut(new PrintStream(outContent));
-        new ViewCommand(1).execute(inventory);
+        new ViewCommand(1).execute(inventory, ui);
         System.setOut(System.out);
 
         String output = outContent.toString();
