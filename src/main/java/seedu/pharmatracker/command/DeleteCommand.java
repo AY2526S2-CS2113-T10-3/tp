@@ -1,5 +1,8 @@
 package seedu.pharmatracker.command;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import seedu.pharmatracker.data.Inventory;
 import seedu.pharmatracker.data.Medication;
 import seedu.pharmatracker.ui.Ui;
@@ -10,6 +13,7 @@ import seedu.pharmatracker.ui.Ui;
  */
 public class DeleteCommand extends Command {
 
+    private static final Logger logger = Logger.getLogger(DeleteCommand.class.getName());
     private final String description;
 
     /**
@@ -30,6 +34,8 @@ public class DeleteCommand extends Command {
      */
     @Override
     public void execute(Inventory inventory, Ui ui) {
+        logger.log(Level.INFO, "Starting execution of DeleteCommand for index: " + description);
+
         assert inventory != null : "Inventory cannot be null in DeleteCommand";
         assert ui != null : "Ui cannot be null in DeleteCommand";
 
@@ -41,5 +47,7 @@ public class DeleteCommand extends Command {
 
         inventory.removeMedication(med);
         ui.printDeletedMessage(med, inventory);
+
+        logger.log(Level.INFO, "Successfully executed DeleteCommand.");
     }
 }
