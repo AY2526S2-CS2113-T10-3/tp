@@ -130,6 +130,11 @@ public class Medication {
         return this.warnings;
     }
 
+    /**
+     * Adds a warning string to the medication's list of warnings.
+     *
+     * @param warning The warning or precaution to be added.
+     */
     public void addWarning(String warning) {
         this.warnings.add(warning);
     }
@@ -151,6 +156,12 @@ public class Medication {
         }
     }
 
+    /**
+     * Returns a formatted string representation of the medication.
+     * Includes all populated fields and appends an "[EXPIRED]" tag if the medication has expired.
+     *
+     * @return A string containing the medication's details
+     */
     @Override
     public String toString() {
         String s = "Name: " + name +
