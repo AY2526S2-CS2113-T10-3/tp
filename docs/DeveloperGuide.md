@@ -21,6 +21,7 @@ Pharmacy staff (pharmacists, pharmacy technicians) who:
 ### Value proposition
 
 {Describe the value proposition: what problem does it solve?}
+Fast, lightweight medication tracking without needing a database or internet connection
 
 ## User Stories
 
@@ -47,3 +48,25 @@ Pharmacy staff (pharmacists, pharmacy technicians) who:
 ## Instructions for manual testing
 
 {Give instructions on how to do a manual product testing e.g., how to load sample data to be used for testing}
+
+### Launching the application
+
+1. Open a terminal in the project root directory.
+2. Run `./gradlew run` (Linux/macOS) or `.\gradlew run` (Windows).
+3. The welcome banner and `Enter command:` prompt should appear.
+
+### Adding a medication
+
+1. Enter: `add /n Paracetamol /d 500mg /q 100 /e 2026-12-31 /t painkiller`
+2. **Expected:** Confirmation message showing the medication was added.
+3. With optional fields: `add /n Amoxicillin /d 250mg /q 50 /e 2026-06-01 /t antibiotic /df Capsule /mfr Pfizer /warn "May cause allergic reactions"`
+
+### Listing medications
+
+1. Enter: `list`
+2. **Expected:** All medications displayed with index, name, dosage, quantity, expiry, and tag. Items with quantity ≤ 10 show `[LOW STOCK]`.
+
+### Finding a medication
+
+1. Enter: `find Paracetamol`
+2. **Expected:** All medications whose name contains "Paracetamol" (case-insensitive) are listed.
