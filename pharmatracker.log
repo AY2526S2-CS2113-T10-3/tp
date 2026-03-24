@@ -26,3 +26,31 @@ Mar 19, 2026 6:41:03 PM seedu.pharmatracker.storage.Storage save
 INFO: Saving inventory to data/pharmatracker.txt
 Mar 19, 2026 6:41:03 PM seedu.pharmatracker.storage.Storage save
 INFO: Inventory saved successfully with 15 entries
+Mar 24, 2026 2:04:12 PM seedu.pharmatracker.storage.Storage load
+INFO: Loading inventory from data/pharmatracker.txt
+Mar 24, 2026 2:04:12 PM seedu.pharmatracker.storage.Storage load
+INFO: Loaded 15 medications from file
+Mar 24, 2026 2:04:45 PM seedu.pharmatracker.command.HelpCommand execute
+INFO: Executing HelpCommand
+Mar 24, 2026 2:04:45 PM seedu.pharmatracker.command.HelpCommand execute
+INFO: HelpCommand executed successfully
+Mar 24, 2026 2:04:45 PM seedu.pharmatracker.storage.Storage save
+INFO: Saving inventory to data/pharmatracker.txt
+Mar 24, 2026 2:04:45 PM seedu.pharmatracker.storage.Storage save
+INFO: Inventory saved successfully with 15 entries
+Mar 24, 2026 2:06:17 PM seedu.pharmatracker.command.AddCommand execute
+INFO: Starting execution of AddCommand for medication: Paracetamol
+Mar 24, 2026 2:06:17 PM seedu.pharmatracker.command.AddCommand execute
+INFO: Successfully executed AddCommand.
+Mar 24, 2026 2:06:17 PM seedu.pharmatracker.storage.Storage save
+INFO: Saving inventory to data/pharmatracker.txt
+Mar 24, 2026 2:06:17 PM seedu.pharmatracker.storage.Storage save
+INFO: Inventory saved successfully with 16 entries
+Mar 24, 2026 2:06:23 PM seedu.pharmatracker.command.ListCommand execute
+INFO: Executing ListCommand
+Mar 24, 2026 2:06:23 PM seedu.pharmatracker.command.ListCommand execute
+INFO: Listed 16 medications
+Mar 24, 2026 2:06:23 PM seedu.pharmatracker.storage.Storage save
+INFO: Saving inventory to data/pharmatracker.txt
+Mar 24, 2026 2:06:23 PM seedu.pharmatracker.storage.Storage save
+INFO: Inventory saved successfully with 16 entries
