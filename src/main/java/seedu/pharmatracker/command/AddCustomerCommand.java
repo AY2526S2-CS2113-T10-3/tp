@@ -27,5 +27,6 @@ public class AddCustomerCommand extends Command {
     public void execute(Inventory inventory, Ui ui, CustomerList customerList) {
         Customer customer = new Customer(customerId, name, phone, address);
         customerList.addCustomer(customer);
+        ui.printAddedCustomerMessage(customer, customerList);
     }
 }
