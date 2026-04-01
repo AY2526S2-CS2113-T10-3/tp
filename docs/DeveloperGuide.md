@@ -39,7 +39,7 @@ with the name, dosage, quantity and expiry date information.
 ```
 add /n NAME /d DOSAGE /q QUANTITY /e EXPIRY [/t TAG]
 ```
-#### How it works
+
 
 The following steps describe how an add command is processed.
 
@@ -58,6 +58,29 @@ The following sequence diagram shows the full flow of the add command, including
 
 ![Sequence diagram showing the execution flow of the Add Command](images/AddCommandSequence.png)
 ---
+
+### Add Customer Feature
+
+This add-customer mechanism allows pharmacy staff to register a new customer in the system.
+```
+add-customer /id ID /n NAME /p PHONE /addr ADDRESS
+```
+#### How it works
+
+1. The user enters `add-customer /id C001 /n John Tan /p 99887766 /addr 10 Orchard Road`.
+2. `PharmaTracker.run()` reads the input and passes the raw string to `Parser.parse()`.
+3. `Parser.parse()` identifies the command word `add-customer`.
+4. It then delegates to specific extraction methods (`extractCustomerID()`, `extractCustomerName()`, etc.) to isolate the arguments.
+5. An `AddCustomerCommand` object is created with these values.
+6. `PharmaTracker.run()` calls `AddCustomerCommand.execute()`, which creates a new `Customer` object and adds it to the `CustomerList`.
+7. Finally, `Ui.printAddedCustomerMessage()` is called to display a confirmation to the user.
+
+The following sequence diagram shows the execution flow:
+
+![Sequence diagram showing the addition of a customer](images/AddCustomerSequence.png)
+
+---
+
 
 ### List Customers Feature
 
@@ -83,7 +106,6 @@ actor User
 participant ":Parser" as Parser
 participant ":ListCustomersCommand" as Cmd
 participant ":CustomerList" as CustList
-
 User -> Parser : "listcustomers"
 Parser -> Cmd : new ListCustomersCommand()
 Cmd -> CustList : getAllCustomers()
