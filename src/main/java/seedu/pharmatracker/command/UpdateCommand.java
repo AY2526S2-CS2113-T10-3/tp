@@ -1,6 +1,8 @@
 package seedu.pharmatracker.command;
 
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import seedu.pharmatracker.customer.CustomerList;
 import seedu.pharmatracker.data.Inventory;
@@ -14,6 +16,8 @@ import seedu.pharmatracker.ui.Ui;
 public class UpdateCommand extends Command {
 
     public static final String COMMAND_WORD = "update";
+
+    private static final Logger logger = Logger.getLogger(UpdateCommand.class.getName());
 
     private final int index;
     private final String name;
@@ -47,6 +51,11 @@ public class UpdateCommand extends Command {
 
     @Override
     public void execute(Inventory inventory, Ui ui, CustomerList customerList) {
+        assert inventory != null : "Inventory cannot be null in UpdateCommand execution.";
+        assert ui != null : "Ui cannot be null in UpdateCommand execution.";
+
+        logger.log(Level.INFO, "Starting execution of UpdateCommand for index:" + index);
+
         if (inventory.getMedications().isEmpty()) {
             System.out.println("inventory is empty.");
             return;
