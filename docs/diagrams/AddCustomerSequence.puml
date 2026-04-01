@@ -1,0 +1,61 @@
+@startuml
+skinparam ArrowFontStyle plain
+
+actor User
+participant ":PharmaTracker" as PharmaTracker
+participant ":Ui" as Ui
+participant "<<class>>\nParser" as Parser
+participant "c:AddCustomerCommand" as AddCustomerCommand
+participant "customer:Customer" as Customer
+participant "customerList:CustomerList" as CustomerList
+
+User -> PharmaTracker : "add-customer /id C001 /n John..."
+activate PharmaTracker
+
+PharmaTracker -> Ui : readCommand()
+activate Ui
+Ui --> PharmaTracker : fullCommand
+deactivate Ui
+
+PharmaTracker -> Parser : parse(fullCommand)
+activate Parser
+
+note right of Parser
+  Parser extracts id, name,
+  phone, and address using
+  internal extract methods.
+end note
+
+create AddCustomerCommand
+Parser -> AddCustomerCommand : new AddCustomerCommand(...)
+activate AddCustomerCommand
+AddCustomerCommand --> Parser : c
+deactivate AddCustomerCommand
+
+Parser --> PharmaTracker : c
+deactivate Parser
+
+PharmaTracker -> AddCustomerCommand : execute(..., customerList)
+activate AddCustomerCommand
+
+create Customer
+AddCustomerCommand -> Customer : new Customer(...)
+activate Customer
+Customer --> AddCustomerCommand : customer
+deactivate Customer
+
+AddCustomerCommand -> CustomerList : addCustomer(customer)
+activate CustomerList
+CustomerList --> AddCustomerCommand
+deactivate CustomerList
+
+AddCustomerCommand -> Ui : printAddedCustomerMessage(...)
+activate Ui
+Ui --> AddCustomerCommand
+deactivate Ui
+
+AddCustomerCommand --> PharmaTracker
+deactivate AddCustomerCommand
+
+deactivate PharmaTracker
+@enduml
