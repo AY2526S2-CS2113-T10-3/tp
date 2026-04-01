@@ -35,7 +35,23 @@ the continuous command execution loop:
 
 ### UI Component
 
-{Update with information about UI Architecture}
+**API:** `Ui.java`
+
+The UI component is solely responsible for handling all interactions with the user. It resides within the `seedu.pharmatracker.ui` package and acts as the bridge between the application's internal logic and the console.
+
+**Key Responsibilities:**
+* **Input Reading:** It utilizes a `Scanner` to read raw string input from the standard input stream (CLI) via the `readCommand()` method.
+* **Output Formatting:** It standardizes the application's visual output (e.g., displaying the welcome message and applying consistent dividers to frame messages).
+* **Data Presentation:** It contains dedicated methods to beautifully format and display complex objects. For instance, `printMedicationDetails()` and `showCustomerDetails()` use `printf` formatting to align data cleanly into readable, tabular structures.
+
+**Design Constraints & Rules for Developers:**
+To maintain a clean architecture, the UI component is strictly separated from the logic and data models.
+* **No Direct Printing:** Developers should **never** use `System.out.println()` directly within `Command`, `Parser`, or `Inventory` classes.
+* **Data Handoff:** If a command needs to display a result, it must process the data and pass the relevant object to a specific method inside the `Ui` class to handle the actual printing.
+
+The following class diagram summarizes the `Ui` component's primary API. *(Note: Private string constants and standard constructors are omitted to reduce visual clutter).*
+
+![UI Component Class Diagram](images/UiClassDiagram.png)
 
 ### Command Component
 
