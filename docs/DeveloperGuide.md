@@ -32,6 +32,51 @@ Beyond the Java Standard Library, no other libraries were used. No code was reus
 
 This section describes some noteworthy details on how certain features are implemented.
 
+### Integration Glue (Planned Enhancement)
+
+The Integration Glue mechanism ensures the seamless synchronization between the medication inventory and patient records, maintaining a consistent architecture across the application.
+
+#### Startup and Main Loop Integration
+
+Following the architectural pattern used for the `Inventory` object, the `CustomerList` will be instantiated within the `PharmaTracker` constructor and loaded from storage during the application's boot sequence. In the main execution loop, the `customerList` will be passed as a parameter to the `execute()` method of every command. This ensures that any logic requiring cross-entity data—such as linking a sale to a patient—has immediate access to both datasets.
+
+#### Atomic Dispensing Operations
+
+A critical function of this integration is the extension of the `dispense` command. This enhancement allows the command to access both the `Inventory` and the `CustomerList` simultaneously.
+
+From the pharmacist's perspective, this means that dispensing a medication becomes a single-step process. Internally, the application performs an atomic operation:
+1.  Reducing the medication stock in the `Inventory`.
+2.  Updating the specific customer's `dispensingHistory` in the `CustomerList`.
+
+#### Design Considerations
+
+| Aspect | Choice | Rationale |
+|--------|--------|-----------|
+| **Atomic Updates** | Unified `execute()` call | Prevents data mismatch errors where inventory is reduced but the patient record fails to update (or vice versa). |
+| **Consistency** | Parameter Injection | Mirrors the existing handling of the `Inventory` object, ensuring the codebase remains predictable and maintainable for the team. |
+
+---
+
+### Customer Management Backend Infrastructure
+
+The customer management system is built on a decoupled data layer that serves as the foundation for all patient-centric commands. It consists of the `Customer` and `CustomerList` classes.
+
+#### Design & Implementation
+
+1. **`Customer` Model**: This class encapsulates a patient's core identity, including a unique ID, name, phone number, and optional address.
+    - **Audit Trail**: It maintains an `ArrayList<String>` called `dispensingHistory`. This list is updated every time a medication is dispensed to that specific customer, providing a permanent clinical record.
+2. **`CustomerList` Manager**: This class acts as a high-level wrapper around an `ArrayList<Customer>`.
+    - **Internal API**: It provides the rest of the application with standardized methods for data manipulation, such as `addCustomer()`, `deleteCustomer()`, and `findByName()`.
+
+#### Design Considerations
+
+| Aspect | Choice | Reason |
+|--------|--------|--------|
+| **Encapsulation** | Wrapping `ArrayList` in `CustomerList` | Protects the data from direct manipulation; allows for unified index validation across different commands. |
+| **History Storage** | `ArrayList<String>` | Provides a simple, growing audit trail for medications without requiring complex relational logic. |
+
+---
+
 ### Add Medication Feature
 
 This add-medication mechanism allows users to record a new medication
@@ -58,29 +103,6 @@ The following sequence diagram shows the full flow of the add command, including
 
 ![Sequence diagram showing the execution flow of the Add Command](images/AddCommandSequence.png)
 ---
-
-### Add Customer Feature
-
-This add-customer mechanism allows pharmacy staff to register a new customer in the system.
-```
-add-customer /id ID /n NAME /p PHONE /addr ADDRESS
-```
-#### How it works
-
-1. The user enters `add-customer /id C001 /n John Tan /p 99887766 /addr 10 Orchard Road`.
-2. `PharmaTracker.run()` reads the input and passes the raw string to `Parser.parse()`.
-3. `Parser.parse()` identifies the command word `add-customer`.
-4. It then delegates to specific extraction methods (`extractCustomerID()`, `extractCustomerName()`, etc.) to isolate the arguments.
-5. An `AddCustomerCommand` object is created with these values.
-6. `PharmaTracker.run()` calls `AddCustomerCommand.execute()`, which creates a new `Customer` object and adds it to the `CustomerList`.
-7. Finally, `Ui.printAddedCustomerMessage()` is called to display a confirmation to the user.
-
-The following sequence diagram shows the execution flow:
-
-![Sequence diagram showing the addition of a customer](images/AddCustomerSequence.png)
-
----
-
 
 ### List Customers Feature
 

@@ -12,6 +12,7 @@ My full technical contribution history, including logic implementation and bug f
 
 ### **Functional Enhancements**
 * **Customer Infrastructure (Backend)**: Engineered the foundational data layer for the patient tracking system, enabling the application to move beyond simple inventory to a relational patient-management tool.
+* **System Integration Glue (Architectural Design)**: Designed the logical "glue" that links the medication and patient systems, ensuring data integrity during atomic dispense-and-record operations.
 * **Data Persistence Layer**: Developed the file-based storage logic within the `Storage` class to ensure patient data and dispensing records survive application restarts.
 * **Intelligent Stock Monitoring**: Created the `lowstock` logic and configurable threshold engine, allowing users to identify dwindling supplies before they impact patient care.
 * **Advanced Command Processing**: Refined the command parser to support complex, multi-parameter inputs required for customer registration and partial record updates.
@@ -46,16 +47,16 @@ The following sequence diagram demonstrates the interaction between components d
 ## Documentation and User Support Contributions
 
 ### **User Guide Portfolio**
-I took a leadership role in ensuring the User Guide was not just a technical manual, but a practical resource for pharmacy staff. My contributions were focused on making the transition from manual tracking to PharmaTracker as seamless as possible:
+I took a leadership role in ensuring the User Guide was not just a technical manual, but a practical resource for pharmacy staff:
 
 * **Command Design Documentation**: I authored the technical instructions for all patient-related commands, including `add-customer`, `listcustomers`, `view-customer`, and `updatecustomer`.
-* **Logic Clarification**: For the `lowstock` command, I explicitly documented the strict `<` (less-than) comparison logic to ensure users understood why an item at exactly the threshold is not flagged, preventing confusion during inventory audits.
-* **Discrepancy Audit**: I performed a comprehensive cross-referencing audit between the manual and the source code. This led to correcting a critical error where the application-closing command was listed as `bye` in the guide but implemented as `exit` in the code.
-* **Quick Reference Tools**: I developed the **Command Summary** table, providing users with a high-density reference guide for all 17 available commands and their respective flag formats.
+* **Logic Clarification**: For the `lowstock` command, I explicitly documented the strict `<` (less-than) comparison logic to prevent confusion during inventory audits.
+* **Discrepancy Audit**: I performed a comprehensive cross-referencing audit between the manual and the source code, correcting a critical error where the application-closing command was listed as `bye` in the guide but implemented as `exit` in the code.
+* **Quick Reference Tools**: I developed the **Command Summary** table, providing users with a high-density reference guide for all 17 available commands.
 
 ### **Developer Guide Portfolio**
-To support the long-term maintainability of the project, I provided high-level architectural walkthroughs for the following areas:
+To support the long-term maintainability and architectural clarity of the project, I authored documentation for the following high-level areas:
 
-* **Registration Logic**: I detailed the "Add Customer" flow, explaining how the `Parser` decomposes complex input strings into discrete attributes before constructing the `AddCustomerCommand`.
-* **State Analysis**: My contributions include design rationale tables explaining the use of `null` values for absent flags in `UpdateCustomerCommand`, which allows for "partial updates" where users only change the fields they need without overwriting existing data.
-* **Visual Documentation**: I created and integrated the PUML sequence diagrams that visualize the interactions between the `Ui`, `Parser`, and `CustomerList` components.
+* **Architectural Wiring (Integration Glue)**: I planned and documented the "Integration Glue" section, describing the planned enhancement to synchronize the inventory and patient systems. I explained how parameter injection in the command execution loop supports atomic dispensed-medication records.
+* **Data Layer Infrastructure**: I detailed the implementation of the core `Customer` and `CustomerList` backend, explaining how the decoupled data layer serves as the internal API for v2.0 features.
+* **Technical Rationale Analysis**: My contributions include design consideration tables that analyze technical trade-offs, such as the use of dynamic `ArrayList` storage for patient audit trails and the rationale for wrapping collection lists in manager classes.
