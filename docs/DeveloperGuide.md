@@ -64,18 +64,6 @@ The following class diagram summarizes the `Ui` component's primary API. *(Note:
 
 ![UI Component Class Diagram](images/UiClassDiagram.png)
 
-### Command Component
-
-{Update with information about Command Architecture}
-
-### Parser Component
-
-{Update with information about Parser Architecture}
-
-### Storage Component
-
-{Update with information about Storage Component}
-
 ## Implementation
 
 This section describes some noteworthy details on how certain features are implemented.
@@ -263,6 +251,30 @@ The following sequence diagram shows the full execution flow of the `view` comma
 | `parseInt` in `Parser`, not `execute()` | `Parser` | Fails fast with a parse error before a command object is even created; consistent with how other index-based commands are parsed |
 | Display delegated to `Ui.printMedicationDetails()` | `Ui` | Keeps the command focused on retrieval logic only; consistent with SRP enforced across the codebase |
 
+---
+## Update Medication Feature
+
+The `update` command allows users to modify one or more fields of an existing medication record in the inventory without having to delete and re-add the item. Any field not explicitly specified in the command remains unchanged.
+
+### Command Format
+```
+update INDEX [/n NAME] [/d DOSAGE] [/q QUANTITY] [/e EXPIRY] [/t TAG] [/df DOSAGE_FORM] [/mfr MANUFACTURER] [/dir DIRECTIONS] [/freq FREQUENCY] [/route ROUTE] [/max MAX_DAILY_DOSE] [/warn WARNINGS...]
+```
+
+### How It Works
+
+1. The user enters an update command, e.g., `update 1 /q 50 /t Urgent`.
+2. `PharmaTracker.run()` reads the input and passes the raw string to `Parser.parse()`.
+3. `Parser.parse()` identifies the command word `update`.
+4. The parser isolates the target index and extracts optional flags (e.g., `/n`, `/q`, `/e`) using utility methods like `extractOptionalFlag()` and `extractOptionalQuantity()`. These methods return the updated values or `null` if a flag is absent.
+5. An `UpdateCommand` object is instantiated with the index and the extracted fields. Unspecified fields are passed as `null`.
+6. `PharmaTracker.run()` calls `UpdateCommand.execute()`, which validates the target index against the current size of the inventory. If invalid, an error message is printed and the command returns early.
+7. For a valid index, the corresponding `Medication` object is retrieved from the `Inventory`.
+8. The command sequentially checks each field. If a field is not `null`, the respective setter method (e.g., `setQuantity()`, `setTag()`) is called on the `Medication` object.
+9. As fields are updated, descriptions of the changes are appended to an `ArrayList<String> changes`.
+10. Finally, `Ui.printUpdatedMedicationMessage()` is called with the updated `Medication` and the `changes` list to generate a dynamic success message showing exactly what was modified.
+
+![Sequence diagram showing the execution flow of the Update Command](images/UpdateCommandSequence.png)
 ---
 ### List Medication Feature
 
