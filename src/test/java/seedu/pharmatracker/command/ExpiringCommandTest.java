@@ -3,6 +3,7 @@ package seedu.pharmatracker.command;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import seedu.pharmatracker.customer.CustomerList;
 import seedu.pharmatracker.data.Inventory;
 import seedu.pharmatracker.data.Medication;
@@ -34,9 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 //@@author yihernggggg
 public class ExpiringCommandTest {
 
-    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
-    private final PrintStream original = System.out;
-
+    // Static variables declared before instance variables (checkstyle: declaration order)
     // Reference dates computed once at load time — tests never go stale
     private static final String EXPIRY_PAST = "2000-01-01";
     private static final String EXPIRY_SLASH_PAST = "01/01/2000";
@@ -45,6 +44,9 @@ public class ExpiringCommandTest {
     private static final String EXPIRY_SOON_SLASH =
             LocalDate.now().plusDays(7).format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
     private static final String EXPIRY_FAR = "2099-12-31";
+
+    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+    private final PrintStream original = System.out;
 
     @BeforeEach
     public void setUp() {
@@ -132,7 +134,7 @@ public class ExpiringCommandTest {
      * (ISO format) appears in the output.
      */
     @Test
-    public void execute_expiringWithinDefaultWindow_isoFormat_appearsInOutput() {
+    public void execute_expiringWithinDefaultWindow_isoFormat() {
         Inventory inventory = new Inventory();
         inventory.addMedication(new Medication("Paracetamol", "500mg", 100, EXPIRY_SOON_ISO, "fever"));
         new ExpiringCommand().execute(inventory, new Ui(), new CustomerList());
@@ -144,7 +146,7 @@ public class ExpiringCommandTest {
      * (dd/MM/yyyy format) appears in the output.
      */
     @Test
-    public void execute_expiringWithinDefaultWindow_slashFormat_appearsInOutput() {
+    public void execute_expiringWithinDefaultWindow_slashFormat() {
         Inventory inventory = new Inventory();
         inventory.addMedication(new Medication("Cetirizine", "10mg", 30, EXPIRY_SOON_SLASH, "allergy"));
         new ExpiringCommand().execute(inventory, new Ui(), new CustomerList());
