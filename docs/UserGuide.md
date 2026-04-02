@@ -33,14 +33,43 @@ PharmaTracker is a command-line application for pharmacy staff to manage medicat
 
 Adds a new medication to the inventory.
 
-Format: `add /n NAME /d DOSAGE /q QUANTITY /e EXPIRY [/t TAG] [/df DOSAGE_FORM] [/mfr MANUFACTURER] [/dir DIRECTIONS] [/freq FREQUENCY] [/route ROUTE] [/max MAX_DAILY_DOSE] [/warn WARNING]`
+**Format:** `add /n NAME /d DOSAGE /q QUANTITY /e EXPIRY [/t TAG] [/df DOSAGE_FORM] [/mfr MANUFACTURER] [/dir DIRECTIONS] [/freq FREQUENCY] [/route ROUTE] [/max MAX_DAILY_DOSE] [/warn WARNING]`
 
-- `EXPIRY` must be in `dd/MM/yyyy` format.
-- `/warn` can be repeated for multiple warnings.
+**Mandatory Parameters:**
+* `/n NAME`: The name of the medication. 
+* `/d DOSAGE`: The strength or dosage (e.g., 500mg).
+* `/q QUANTITY`: The number of units in stock. **Must be a positive integer**.
+* `/e EXPIRY`: The expiration date. **Must be in `DD/MM/YYYY` format**.
 
-Examples:
-- `add /n Paracetamol /d 500mg /q 100 /e 31/12/2026 /t painkiller`
-- `add /n Amoxicillin /d 250mg /q 50 /e 01/06/2026 /t antibiotic /df Capsule /mfr Pfizer /warn May cause allergic reactions`
+**Optional Parameters:**
+* `/t TAG`: A category to group the medication (e.g., `antibiotic`, `painkiller`).
+* `/df DOSAGE_FORM`: The physical form of the medication (e.g., `Tablet`, `Syrup`, `Ointment`).
+* `/mfr MANUFACTURER`: The company that produces the medication (e.g., `Pfizer`, `GSK`).
+* `/dir DIRECTIONS`: Specific instructions for consumption (e.g., `Take after meals`, `Dissolve in water`).
+* `/freq FREQUENCY`: How often the medication should be taken (e.g., `Twice a day`, `Every 8 hours`).
+* `/route ROUTE`: The method of administration (e.g., `Oral`, `Topical`, `Intravenous`).
+* `/max MAX_DAILY_DOSE`: The maximum safe limit to consume within 24 hours (e.g., `4000mg`, `4 tablets`).
+* `/warn WARNING`: Important safety warnings or side effects. This parameter can be repeated to add multiple warnings (e.g., `/warn Drowsiness /warn Avoid alcohol`).
+
+**Examples:**
+* `add /n Paracetamol /d 500mg /q 100 /e 31/12/2026 /t painkiller`
+* `add /n Amoxicillin /d 250mg /q 50 /e 01/06/2026 /t antibiotic /df Capsule /mfr Pfizer /warn May cause allergic reactions`
+* `add /n Cough Syrup /d 15mg/5ml /q 20 /e 15/10/2025 /df Syrup /dir Shake well before use /freq Every 6 hours /route Oral`
+
+---
+
+### Delete a medication: `delete`
+
+Removes a medication from the inventory. 
+
+**Format:** `delete INDEX`
+
+- Deletes the medication at the specified `INDEX`. 
+- The `INDEX` refers to the index number shown in the **most recently displayed** medication list.
+- The index **must be a positive integer**, and must not exceed the number of medications currently in the list.
+
+Examples
+- `list` followed by `delete 5` (This deletes the 5th medication in the inventory.)
 
 ---
 
@@ -127,19 +156,6 @@ WARNINGS & PRECAUTIONS
 - May cause allergic reactions
 ========================================
 ```
-
----
-
-### Delete a medication: `delete`
-
-Removes a medication from the inventory by its index.
-
-Format: `delete INDEX`
-
-Example: `delete 2`
-
----
-
 ### Dispense a medication: `dispense`
 
 Reduces the stock of a medication by the specified quantity. Optionally links the
@@ -211,6 +227,32 @@ Useful when a new shipment of medication arrives.
   ```
 
 ---
+
+### Update a medication: `update`
+
+Edits the details of an existing medication in the inventory.
+
+**Format:** `update INDEX [/n NAME] [/d DOSAGE] [/q QUANTITY] [/e EXPIRY] [/t TAG] [/df DOSAGE_FORM] [/mfr MANUFACTURER] [/dir DIRECTIONS] [/freq FREQUENCY] [/route ROUTE] [/max MAX_DAILY_DOSE] [/warn WARNING]...`
+
+**Rules & Constraints:**
+* Updates the medication at the specified `INDEX`.
+* The index refers to the **most recently displayed** medication list.
+* The index **must be a positive integer** (e.g., 1, 2, 3) and must not exceed the total number of medications in the list.
+* **At least one** of the optional fields must be provided.
+* Existing values will be completely overwritten by the newly provided values.
+
+**Examples:**
+* `update 1 /e 31/12/2027`: Updates the expiry date of the 1st medication in the list to `31/12/2027`. All other details remain unchanged.
+* `update 2 /n Amoxicillin Forte /d 500mg`: Updates both the name and the dosage of the 2nd medication in the list.
+
+**Notes:**
+* **Updating quantities:** While you *can* use this command to overwrite the quantity (`/q`), it is highly recommended to use the `restock` and `dispense` commands for everyday inventory management, as they safely add to or subtract from the current stock.
+* **Replacing lists (Warnings/Tags):** When updating fields that can have multiple values (like `/warn` or `/t`), the existing values are **completely replaced** by the new ones.
+  * *Example:* If a medication has the warnings "Drowsiness" and "Take with food", typing `update 1 /warn Avoid alcohol` will remove the first two warnings and leave *only* "Avoid alcohol".
+* **Clearing lists:** *(Optional depending on your implementation)* To clear all warnings or tags from a medication without adding new ones, type the parameter without any text after it (e.g., `update 1 /warn`).
+* **Duplicates:** The system will reject the update if changing the name and dosage would cause it to be identical to another medication already in the inventory.
+
+--- 
 
 ### Sort medications by expiry: `sort`
 
@@ -292,11 +334,36 @@ Example: `label 1`
 
 ### Add a customer: `add-customer`
 
-Registers a new customer in the system.
+Registers a new customer into the pharmacy's database.
 
-Format: `add-customer /id CUSTOMER_ID /n NAME /p PHONE /addr ADDRESS`
+**Format:** `add-customer /id CUSTOMER_ID /n NAME /p PHONE [/addr ADDRESS]`
 
-Example: `add-customer /id C001 /n John Tan /p 99887766 /addr 10 Orchard Road`
+**Mandatory Parameters:**
+* `/id CUSTOMER_ID`: A unique identifier for the customer (e.g., `C001`).
+* `/n NAME`: The full name of the customer.
+* `/p PHONE`: The customer's contact number.
+
+**Optional Parameters:**
+* `/addr ADDRESS`: The customer's residential or mailing address.
+
+**Examples:**
+* `add-customer /id C001 /n John Doe /p 98765432`
+* `add-customer /id C002 /n Jane Smith /p 91234567 /a 123 Clementi Road, #04-56`
+
+---
+### Delete a customer: `delete-customer`
+
+Removes an existing customer from the pharmacy's database.
+
+**Format:** `delete-customer INDEX`
+
+**Rules & Constraints:**
+* Deletes the customer at the specified `INDEX`.
+* The `INDEX` refers to the index number shown in the **most recently displayed** customer list (e.g., after running a `list-customers` or `find-customer` command).
+* The index **must be a positive integer** and must not exceed the total number of customers currently in the list.
+
+**Examples:**
+* `list-customers` followed by `delete-customer 2`: Deletes the 2nd customer shown in the complete customer list.
 
 ---
 
