@@ -1,21 +1,29 @@
 # Karthik Kathiresh - Project Portfolio Page
 
 ## Overview
-*Briefly introduce PharmaTracker here. Mention that it is a CLI-based application tailored for pharmacists. Describe the core problem it solves, how users interact with it (e.g., short typed commands), the primary language used (Java), and the overall scale of the application.*
+PharmaTracker is a command-line application for pharmacy staff to manage medication inventory
+and customer records. It supports adding, finding, dispensing, and restocking medications,
+as well as managing customer information and tracking dispensing history. It is optimized for
+fast typists who prefer a CLI workflow over GUI applications.
 
 ## Summary of Contributions
 
 ### Code Contributed
-[View my code on RepoSense](https://nus-cs2113-ay2526-s2.github.io/tp-dashboard/?search=karthikkathiresh&sort=groupTitle%20dsc&sortWithin=title&since=2026-02-20T00%3A00%3A00&timeframe=commit&mergegroup=&groupSelect=groupByRepos&breakdown=false)
+[View my code on RepoSense](https://nus-cs2113-ay2526-s2.github.io/tp-dashboard/?search=&sort=groupTitle&sortWithin=title&timeframe=commit&mergegroup=&groupSelect=groupByRepos&breakdown=true&checkedFileTypes=docs~functional-code~test-code~other&since=2026-02-20T00%3A00%3A00&filteredFileName=&tabOpen=true&tabType=authorship&tabAuthor=karthikkathiresh&tabRepo=AY2526S2-CS2113-T10-3%2Ftp%5Bmaster%5D&authorshipIsMergeGroup=false&authorshipFileTypes=docs~functional-code~test-code~other&authorshipIsBinaryFileTypeChecked=false&authorshipIsIgnoredFilesChecked=false)
 *(Note: Adjust the date or specific parameters in the URL to match your exact milestone timelines).*
 
 ### Enhancements Implemented
-*(For each major feature or enhancement, include the "What", the "Why", and the "How" (technical implementation details). Tag the version milestones to show progression.)*
 
-* **[Feature Name 1]** (v1.0):
-    * **What it does:** *Explain the functionality clearly.*
-    * **Justification:** *Why does this improve the workflow for a pharmacist?*
-    * **Technical Highlights:** *Mention the specific classes or components you built. Highlight how you handled edge cases, data parsing, or any challenging design alternatives you considered.*
+* **[Application Architecture and Base Code Setup]** (v1.0):
+    * **What it does:** *Established the foundational codebase and the main execution loop required for the overall 
+                         PharmaTracker application to run.*
+  * **Justification:** *This was a critical initial step. By establishing the core structure early, it enabled all group members to work independently.*
+  * **Technical Highlights:** *Implemented the main entry class, `PharmaTracker`. 
+                               Created the `Medication` and `Inventory` classes to manage medical data. 
+                               Created the `Ui` class to handle inputs and outputs. 
+                               Implemented a skeleton of the `Parser` class to define the execution flow for different application commands. 
+                               Configured the testing infrastructure by updating `runtest.bat` and `EXPECTED.TXT` for CI validation.*
+
 * **[Feature Name 2]** (v2.0):
     * **What it does:** *Explain the functionality.*
     * **Justification:** *Explain the rationale.*
