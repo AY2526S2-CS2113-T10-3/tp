@@ -18,6 +18,7 @@ import seedu.pharmatracker.customer.CustomerList;
  * Defaults to 30 days if no custom window is provided.
  * Medications are separated into two categories: already expired and expiring soon.
  */
+//@@author yihernggggg
 public class ExpiringCommand extends Command {
 
     public static final String COMMAND_WORD = "expiring";
@@ -67,27 +68,21 @@ public class ExpiringCommand extends Command {
         LocalDate cutoff = today.plusDays(days);
 
         for (Medication med : medicationList) {
-            LocalDate expiryDate = null;
             String expiry = med.getExpiryDate();
-            if (expiry == null) {
+            if (expiry == null || expiry.trim().isEmpty()) {
                 continue;
             }
-            expiry = expiry.trim();
+
             try {
-                expiryDate = LocalDate.parse(expiry, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            } catch (DateTimeParseException e1) {
-                try {
-                    expiryDate = LocalDate.parse(expiry, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-                } catch (DateTimeParseException e2) {
-                    logger.log(Level.WARNING, "Could not parse expiry date for: "
-                            + med.getName() + " (" + expiry + ")");
-                    continue;
+                LocalDate expiryDate = LocalDate.parse(expiry.trim(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+                if (expiryDate.isBefore(today)) {
+                    expiredMeds.add(med);
+                } else if (!expiryDate.isAfter(cutoff)) {
+                    expiringMeds.add(med);
                 }
-            }
-            if (expiryDate.isBefore(today)) {
-                expiredMeds.add(med);
-            } else if (!expiryDate.isAfter(cutoff)) {
-                expiringMeds.add(med);
+            } catch (DateTimeParseException e) {
+                logger.log(Level.WARNING, "Skipping medication with non-standard date format: " + med.getName());
             }
         }
 

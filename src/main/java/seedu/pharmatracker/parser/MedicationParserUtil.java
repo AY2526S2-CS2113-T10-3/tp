@@ -1,5 +1,8 @@
 package seedu.pharmatracker.parser;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 
 import seedu.pharmatracker.exceptions.PharmaTrackerException;
@@ -122,17 +125,17 @@ public class MedicationParserUtil {
         int valueStart = expiryIndex + 2;
         int valueEnd = ParserUtil.findNextFlagIndex(description, valueStart);
 
-        if (valueStart > description.length()) {
+        String rawExpiryDate = description.substring(valueStart, valueEnd).trim();
+        if (rawExpiryDate.isEmpty()) {
             throw new PharmaTrackerException("Expiry date cannot be empty!");
         }
 
-        String expiryDate = description.substring(valueStart, valueEnd);
-
-        if (expiryDate.isEmpty()) {
-            throw new PharmaTrackerException("Expiry date cannot be empty!");
+        LocalDate parsedDate = parseDate(rawExpiryDate);
+        if (parsedDate == null) {
+            throw new PharmaTrackerException("Invalid date format! Supported formats: yyyy-MM-dd, d/M/yyyy, d-M-yyyy");
         }
 
-        return expiryDate;
+        return parsedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     }
 
     /**
@@ -183,5 +186,27 @@ public class MedicationParserUtil {
         } catch (NumberFormatException e) {
             throw new PharmaTrackerException("Invalid quantity! Please enter a valid whole number.");
         }
+    }
+
+    /**
+     * Attempts to parse a date string using the supported formats: yyyy-MM-dd, d/M/yyyy, d-M-yyyy
+     * @param dateString The raw date string from user input.
+     * @return The parsed LocalDate object, or null if the format is unsupported.
+     */
+    private static LocalDate parseDate(String dateString) {
+        DateTimeFormatter[] formatters = {
+                DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+                DateTimeFormatter.ofPattern("d/M/yyyy"),
+                DateTimeFormatter.ofPattern("d-M-yyyy")
+        };
+
+        for (DateTimeFormatter formatter : formatters) {
+            try {
+                return LocalDate.parse(dateString, formatter);
+            } catch (DateTimeParseException e) {
+                // Continue to the next formatter if parsing fails
+            }
+        }
+        return null;
     }
 }
