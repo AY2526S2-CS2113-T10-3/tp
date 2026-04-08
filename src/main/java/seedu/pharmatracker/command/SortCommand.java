@@ -57,24 +57,13 @@ public class SortCommand extends Command {
             assert med != null : "Medication should not be null";
             String expiryDate = med.getExpiryDate();
             assert expiryDate != null : "Expiry date should not be null";
-            expiryDate = expiryDate.trim();
-            LocalDate parsedDate = null;
+
             try {
-                parsedDate = LocalDate.parse(expiryDate, formatter1);
-                logger.log(Level.FINE,
-                        "Parsed (yyyy-MM-dd) for " + med.getName() + ": " + expiryDate + " -> " + parsedDate);
-            } catch (DateTimeParseException e1) {
-                try {
-                    parsedDate = LocalDate.parse(expiryDate, formatter2);
-                    logger.log(Level.FINE,
-                            "Parsed (dd/MM/yyyy) for " + med.getName() + ": " + expiryDate + " -> " + parsedDate);
-                } catch (DateTimeParseException e2) {
-                    logger.log(Level.WARNING,
-                            "Invalid expiry date for medication: " + med.getName() + ", value: " + expiryDate);
-                    parsedDate = LocalDate.MAX;
-                }
+                return LocalDate.parse(expiryDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            } catch (DateTimeParseException e)  {
+                logger.log(Level.WARNING, "Unexpected date format in inventory: " + expiryDate);
+                return LocalDate.MAX;
             }
-            return parsedDate;
         }));
 
         logger.log(Level.INFO, "Medications sorted successfully");
