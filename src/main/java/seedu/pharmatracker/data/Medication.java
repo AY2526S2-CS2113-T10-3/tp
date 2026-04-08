@@ -161,25 +161,19 @@ public class Medication {
      * @return true if the expiry date is before today, false otherwise
      */
     public boolean isExpired() {
-        String expiry = this.expiryDate;
-        if (expiry == null) {
+        if (this.expiryDate == null || this.expiryDate.trim().isEmpty()) {
             return false;
         }
-        expiry = expiry.trim();
-        LocalDate expiryDateParsed = null;
-        DateTimeFormatter formatter1 = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        DateTimeFormatter formatter2 = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
         try {
-            expiryDateParsed = LocalDate.parse(expiry, formatter1);
-        } catch (DateTimeParseException e1) {
-            try {
-                expiryDateParsed = LocalDate.parse(expiry, formatter2);
-            } catch (DateTimeParseException e2) {
-                return false;
-            }
+            // Safe to assume yyyy-MM-dd now
+            LocalDate expiryDateParsed = LocalDate.parse(this.expiryDate.trim(),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            return expiryDateParsed.isBefore(LocalDate.now());
+        } catch (DateTimeParseException e) {
+            // This would only happen if legacy data exists in the .txt file
+            return false;
         }
-        LocalDate today = LocalDate.now();
-        return expiryDateParsed.isBefore(today);
     }
 
     /**
