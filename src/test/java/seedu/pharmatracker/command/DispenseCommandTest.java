@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+//@@author alsonsim
 /**
  * JUnit tests for {@link DispenseCommand}.
  *
@@ -415,5 +416,102 @@ public class DispenseCommandTest {
         new DispenseCommand(1, 10, 1).execute(inventory, new Ui(), customerList);
         new DispenseCommand(1, 10, 1).execute(inventory, new Ui(), customerList);
         assertEquals(2, customerList.getCustomer(0).getDispensingHistory().size());
+    }
+
+// -------------------------------------------------------------------------
+// Allergy check
+// -------------------------------------------------------------------------
+
+    /**
+     * Tests that dispensing is aborted when the linked customer is allergic to the medication.
+     * Stock must remain unchanged.
+     */
+    @Test
+    public void execute_customerAllergicToMedication_abortsDispense() {
+        Inventory inventory = new Inventory();
+        CustomerList customerList = new CustomerList();
+        inventory.addMedication(new Medication("Penicillin V", "500mg", 50, "2030-01-01", "antibiotic"));
+        Customer customer = new Customer("C001", "Alice Tan", "91234567", "");
+        customer.addAllergy("penicillin");
+        customerList.addCustomer(customer);
+
+        new DispenseCommand(1, 5, 1).execute(inventory, new Ui(), customerList);
+
+        String output = out.toString();
+        assertTrue(output.contains("Allergy conflict detected"));
+        assertTrue(output.contains("penicillin"));
+        assertTrue(output.contains("Dispense aborted"));
+        assertEquals(50, inventory.getMedication(0).getQuantity());
+    }
+
+    /**
+     * Tests that no history entry is added to the customer when dispense is aborted
+     * due to an allergy conflict.
+     */
+    @Test
+    public void execute_allergyConflict_noHistoryAdded() {
+        Inventory inventory = new Inventory();
+        CustomerList customerList = new CustomerList();
+        inventory.addMedication(new Medication("Penicillin V", "500mg", 50, "2030-01-01", "antibiotic"));
+        Customer customer = new Customer("C001", "Alice Tan", "91234567", "");
+        customer.addAllergy("penicillin");
+        customerList.addCustomer(customer);
+
+        new DispenseCommand(1, 5, 1).execute(inventory, new Ui(), customerList);
+
+        assertEquals(0, customer.getDispensingHistory().size());
+    }
+
+    /**
+     * Tests that dispense proceeds normally when the customer has allergies recorded
+     * but none match the medication being dispensed.
+     */
+    @Test
+    public void execute_noAllergyConflict_dispensesSuccessfully() {
+        Inventory inventory = new Inventory();
+        CustomerList customerList = new CustomerList();
+        inventory.addMedication(new Medication("Ibuprofen", "200mg", 100, "2030-01-01", "pain"));
+        Customer customer = new Customer("C001", "Alice Tan", "91234567", "");
+        customer.addAllergy("penicillin");
+        customerList.addCustomer(customer);
+
+        new DispenseCommand(1, 10, 1).execute(inventory, new Ui(), customerList);
+
+        assertTrue(out.toString().contains("Dispensing successfully!"));
+        assertEquals(90, inventory.getMedication(0).getQuantity());
+    }
+
+    /**
+     * Tests that the allergy check uses case-insensitive substring matching,
+     * so "aspirin" allergen matches "Aspirin 100mg Tablet" medication name.
+     */
+    @Test
+    public void execute_allergySubstringMatch_abortsDispense() {
+        Inventory inventory = new Inventory();
+        CustomerList customerList = new CustomerList();
+        inventory.addMedication(new Medication("Aspirin 100mg Tablet", "100mg", 80, "2030-01-01", "pain"));
+        Customer customer = new Customer("C002", "Bob Lim", "98765432", "");
+        customer.addAllergy("aspirin");
+        customerList.addCustomer(customer);
+
+        new DispenseCommand(1, 1, 1).execute(inventory, new Ui(), customerList);
+
+        assertTrue(out.toString().contains("Allergy conflict detected"));
+        assertEquals(80, inventory.getMedication(0).getQuantity());
+    }
+
+    /**
+     * Tests that no allergy check is performed when no customer is linked.
+     * Dispense should succeed normally.
+     */
+    @Test
+    public void execute_noCustomerLinked_allergyCheckSkipped() {
+        Inventory inventory = new Inventory();
+        inventory.addMedication(new Medication("Penicillin V", "500mg", 50, "2030-01-01", "antibiotic"));
+
+        new DispenseCommand(1, 5).execute(inventory, new Ui(), new CustomerList());
+
+        assertTrue(out.toString().contains("Dispensing successfully!"));
+        assertEquals(45, inventory.getMedication(0).getQuantity());
     }
 }

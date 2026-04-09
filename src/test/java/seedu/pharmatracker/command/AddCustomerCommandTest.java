@@ -1,5 +1,7 @@
 package seedu.pharmatracker.command;
 
+import java.util.ArrayList;
+
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -10,59 +12,60 @@ import seedu.pharmatracker.customer.CustomerList;
 import seedu.pharmatracker.data.Inventory;
 import seedu.pharmatracker.ui.Ui;
 
+//@@author karthikkathiresh
 public class AddCustomerCommandTest {
 
     @Test
     void constructor_validInputs_success() {
-        assertDoesNotThrow(() -> new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road"));
+        assertDoesNotThrow(() -> new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road", new ArrayList<>()));
     }
 
     @Test
     void constructor_nullId_throwsAssertionError() {
         assertThrows(AssertionError.class,
-                () -> new AddCustomerCommand(null, "John Doe", "91234567", "123 Clementi Road"));
+                () -> new AddCustomerCommand(null, "John Doe", "91234567", "123 Clementi Road", new ArrayList<>()));
     }
 
     @Test
     void constructor_emptyId_throwsAssertionError() {
         assertThrows(AssertionError.class,
-                () -> new AddCustomerCommand("", "John Doe", "91234567", "123 Clementi Road"));
+                () -> new AddCustomerCommand("", "John Doe", "91234567", "123 Clementi Road", new ArrayList<>()));
     }
 
     @Test
     void constructor_nullName_throwsAssertionError() {
         assertThrows(AssertionError.class,
-                () -> new AddCustomerCommand("C001", null, "91234567", "123 Clementi Road"));
+                () -> new AddCustomerCommand("C001", null, "91234567", "123 Clementi Road", new ArrayList<>()));
     }
 
     @Test
     void constructor_emptyName_throwsAssertionError() {
         assertThrows(AssertionError.class,
-                () -> new AddCustomerCommand("C001", "", "91234567", "123 Clementi Road"));
+                () -> new AddCustomerCommand("C001", "", "91234567", "123 Clementi Road", new ArrayList<>()));
     }
 
     @Test
     void constructor_nullPhone_throwsAssertionError() {
         assertThrows(AssertionError.class,
-                () -> new AddCustomerCommand("C001", "John Doe", null, "123 Clementi Road"));
+                () -> new AddCustomerCommand("C001", "John Doe", null, "123 Clementi Road", new ArrayList<>()));
     }
 
     @Test
     void constructor_emptyPhone_throwsAssertionError() {
         assertThrows(AssertionError.class,
-                () -> new AddCustomerCommand("C001", "John Doe", "", "123 Clementi Road"));
+                () -> new AddCustomerCommand("C001", "John Doe", "", "123 Clementi Road", new ArrayList<>()));
     }
 
     @Test
     void constructor_nullAddress_throwsAssertionError() {
         assertThrows(AssertionError.class,
-                () -> new AddCustomerCommand("C001", "John Doe", "91234567", null));
+                () -> new AddCustomerCommand("C001", "John Doe", "91234567", null, new ArrayList<>()));
     }
 
     @Test
     void execute_validParameters_customerAddedToCustomerList() {
         // Setup
-        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road");
+        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road", new ArrayList<>());
         Inventory inventory = new Inventory();
         Ui ui = new Ui();
         CustomerList customerList = new CustomerList();
@@ -80,7 +83,7 @@ public class AddCustomerCommandTest {
 
     @Test
     void execute_nullUi_throwsAssertionError() {
-        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road");
+        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road", new ArrayList<>());
         Inventory inventory = new Inventory();
         CustomerList customerList = new CustomerList();
 
@@ -90,7 +93,7 @@ public class AddCustomerCommandTest {
 
     @Test
     void execute_nullCustomerList_throwsAssertionError() {
-        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road");
+        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road", new ArrayList<>());
         Inventory inventory = new Inventory();
         Ui ui = new Ui();
 

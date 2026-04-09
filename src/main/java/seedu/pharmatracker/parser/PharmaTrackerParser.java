@@ -153,7 +153,8 @@ public class PharmaTrackerParser {
         case UpdateCustomerCommand.COMMAND_WORD:
             if (description.isEmpty()) {
                 throw new PharmaTrackerException(
-                        "Invalid format! Use: updatecustomer INDEX [/n NAME] [/p PHONE] [/a ADDRESS]");
+                        "Invalid format! Use: updatecustomer INDEX [/n NAME] [/p PHONE] [/address ADDRESS]"
+                                + "[/allergy ALLERGY1,ALLERGY2,...]");
             }
             try {
                 String[] ucParts = description.trim().split("\\s+", 2);
@@ -161,8 +162,12 @@ public class PharmaTrackerParser {
                 String ucArgs = (ucParts.length > 1) ? ucParts[1] : "";
                 String ucName = CustomerParserUtil.extractCustomerUpdateFlag(ucArgs, "/n");
                 String ucPhone = CustomerParserUtil.extractCustomerUpdateFlag(ucArgs, "/p");
-                String ucAddress = CustomerParserUtil.extractCustomerUpdateFlag(ucArgs, "/a");
-                return new UpdateCustomerCommand(ucIndex, ucName, ucPhone, ucAddress);
+                String ucAddress = CustomerParserUtil.extractCustomerUpdateFlag(ucArgs, "/address");
+                java.util.ArrayList<String> ucAllergies = null;
+                if (ucArgs.contains(CustomerParserUtil.FLAG_ALLERGY)) {
+                    ucAllergies = CustomerParserUtil.extractCustomerAllergies(ucArgs);
+                }
+                return new UpdateCustomerCommand(ucIndex, ucName, ucPhone, ucAddress, ucAllergies);
             } catch (NumberFormatException e) {
                 throw new PharmaTrackerException(
                         "Invalid index! The first argument must be a valid number.");

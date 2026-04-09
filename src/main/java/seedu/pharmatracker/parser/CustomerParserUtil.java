@@ -13,9 +13,10 @@ public class CustomerParserUtil {
     public static final String FLAG_ID = "/id";
     public static final String FLAG_NAME = "/n";
     public static final String FLAG_PHONE = "/p";
-    public static final String FLAG_ADDRESS = "/a";
+    public static final String FLAG_ADDRESS = "/address";
+    public static final String FLAG_ALLERGY = "/allergy";
 
-    static final String[] CUSTOMER_UPDATE_FLAGS = {FLAG_NAME, FLAG_PHONE, FLAG_ADDRESS};
+    static final String[] CUSTOMER_UPDATE_FLAGS = {FLAG_NAME, FLAG_PHONE, FLAG_ADDRESS, FLAG_ALLERGY};
 
     /**
      * Extracts the mandatory customer ID from the user input.
@@ -81,7 +82,14 @@ public class CustomerParserUtil {
             throw new PharmaTrackerException("Invalid format! Please ensure you include the '/p' flag.");
         }
 
-        int endIndex = (addressIndex == -1) ? description.length() : addressIndex;
+        int allergyIndex = description.indexOf(FLAG_ALLERGY);
+        int endIndex = description.length();
+        if (addressIndex != -1 && addressIndex > phoneIndex) {
+            endIndex = addressIndex;
+        }
+        if (allergyIndex != -1 && allergyIndex > phoneIndex && allergyIndex < endIndex) {
+            endIndex = allergyIndex;
+        }
 
         if (phoneIndex >= endIndex) {
             throw new PharmaTrackerException("Invalid format! '/p' must come before '/addr'");
@@ -102,6 +110,37 @@ public class CustomerParserUtil {
     }
 
     /**
+     * Extracts the optional allergy list from the user input.
+     * Allergies are comma-separated values after the {@code /allergy} flag.
+     *
+     * @param description The raw string containing command arguments.
+     * @return A list of allergy keywords (lowercased, trimmed), or an empty list if not provided.
+     * @throws PharmaTrackerException If the flag is present but the value is empty.
+     */
+    public static java.util.ArrayList<String> extractCustomerAllergies(String description)
+            throws PharmaTrackerException {
+        int allergyIndex = description.indexOf(FLAG_ALLERGY);
+        java.util.ArrayList<String> allergies = new java.util.ArrayList<>();
+
+        if (allergyIndex == -1) {
+            return allergies;
+        }
+
+        String raw = description.substring(allergyIndex + FLAG_ALLERGY.length()).trim();
+        if (raw.isEmpty()) {
+            throw new PharmaTrackerException("Allergy list cannot be empty if the /allergy flag is used!");
+        }
+
+        for (String token : raw.split(",")) {
+            String trimmed = token.trim().toLowerCase();
+            if (!trimmed.isEmpty()) {
+                allergies.add(trimmed);
+            }
+        }
+        return allergies;
+    }
+
+    /**
      * Extracts the optional customer address from the user input.
      *
      * @param description The raw string containing command arguments.
@@ -110,17 +149,16 @@ public class CustomerParserUtil {
      */
     public static String extractCustomerAddress(String description) throws PharmaTrackerException {
         int addressIndex = description.indexOf(FLAG_ADDRESS);
+        int allergyIndex = description.indexOf(FLAG_ALLERGY);
         String warning = "Customer address cannot be empty if the /addr flag is used!";
 
         if (addressIndex == -1) {
             return "";
         }
 
-        if (addressIndex + 5 >= description.length()) {
-            throw new PharmaTrackerException(warning);
-        }
+        int endIndex = (allergyIndex != -1 && allergyIndex > addressIndex) ? allergyIndex : description.length();
 
-        String address = description.substring(addressIndex + 2).trim();
+        String address = description.substring(addressIndex + FLAG_ADDRESS.length(), endIndex).trim();
 
         if (address.isEmpty()) {
             throw new PharmaTrackerException(warning);

@@ -2,6 +2,7 @@ package seedu.pharmatracker.command;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.ArrayList;
 
 import seedu.pharmatracker.customer.Customer;
 import seedu.pharmatracker.customer.CustomerList;
@@ -22,6 +23,7 @@ public class AddCustomerCommand extends Command {
     private final String name;
     private final String phone;
     private final String address;
+    private final ArrayList<String> allergies;
 
     /**
      * Constructs an AddCustomerCommand with the specified customer details.
@@ -30,17 +32,20 @@ public class AddCustomerCommand extends Command {
      * @param name       Full name of the customer.
      * @param phone      Contact phone number of the customer.
      * @param address    Residential address of the customer (can be empty if not provided).
+     * @param allergies  List of known allergy keywords (may be empty).
      */
-    public AddCustomerCommand(String customerId, String name, String phone, String address) {
+    public AddCustomerCommand(String customerId, String name, String phone, String address, ArrayList<String> allergies) {
         assert customerId != null && !customerId.isEmpty() : "Customer ID cannot be null or empty";
         assert name != null && !name.isEmpty() : "Customer name cannot be null or empty";
         assert phone != null && !phone.isEmpty() : "Customer phone cannot be null or empty";
         assert address != null : "Customer address cannot be null";
+        assert allergies != null: "Allergies cannot be null";
 
         this.customerId = customerId;
         this.name = name;
         this.phone = phone;
         this.address = address;
+        this.allergies = allergies;
     }
 
     /**
@@ -59,6 +64,7 @@ public class AddCustomerCommand extends Command {
         logger.log(Level.INFO, "Starting execution of AddCustomerCommand for customer: " + name);
 
         Customer customer = new Customer(customerId, name, phone, address);
+        customer.setAllergies(allergies);
         customerList.addCustomer(customer);
         ui.printAddedCustomerMessage(customer, customerList);
     }
