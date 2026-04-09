@@ -89,7 +89,6 @@ public class Storage {
                     continue;
                 }
 
-                // Compulsory fields
                 String name = parts[0];
                 String dosage = parts[1];
                 int quantity = Integer.parseInt(parts[2]);
@@ -97,7 +96,6 @@ public class Storage {
 
                 assert !name.isEmpty() : "Medication name should not be empty";
 
-                // Optional fields — default to empty string if absent
                 String tag          = parts.length > 4  ? parts[4]  : "";
                 String dosageForm   = parts.length > 5  ? parts[5]  : "";
                 String manufacturer = parts.length > 6  ? parts[6]  : "";
@@ -149,9 +147,7 @@ public class Storage {
 
             for (int i = 0; i < customerList.size(); i++) {
                 seedu.pharmatracker.customer.Customer c = customerList.getCustomer(i);
-                // Join all dispensing history strings into one part using a semicolon
                 String joinedHistory = String.join(HISTORY_SEPARATOR, c.getDispensingHistory());
-
                 fw.write(c.getCustomerId() + " | "
                         + c.getName() + " | "
                         + c.getPhone() + " | "
@@ -187,8 +183,6 @@ public class Storage {
                 if (parts.length >= 4) {
                     seedu.pharmatracker.customer.Customer c =
                             new seedu.pharmatracker.customer.Customer(parts[0], parts[1], parts[2], parts[3]);
-
-                    // If there is history data (the 5th part), split and add it
                     if (parts.length > 4 && !parts[4].trim().isEmpty()) {
                         String[] historyEntries = parts[4].split(HISTORY_SEPARATOR);
                         for (String entry : historyEntries) {
@@ -286,7 +280,6 @@ public class Storage {
         if (!file.exists()) {
             return null;
         }
-
         try {
             Scanner sc = new Scanner(file);
             if (!sc.hasNextLine()) {
@@ -311,7 +304,6 @@ public class Storage {
         if (alertHistory == null) {
             return;
         }
-
         try {
             File file = new File(ALERTS_FILE_PATH);
             file.getParentFile().mkdirs();
@@ -344,7 +336,6 @@ public class Storage {
         if (!file.exists()) {
             return alertHistory;
         }
-
         try {
             Scanner sc = new Scanner(file);
             while (sc.hasNextLine()) {
@@ -390,12 +381,10 @@ public class Storage {
                 if (line.isEmpty()) {
                     continue;
                 }
-
                 String[] parts = line.split("\\|", -1);
                 if (parts.length < 9) {
                     continue;
                 }
-
                 LocalDateTime createdAt = RestockAlert.parseDateTime(parts[5]);
                 boolean acknowledged = Boolean.parseBoolean(parts[6]);
                 LocalDateTime acknowledgedAt = RestockAlert.parseDateTime(parts[7]);
@@ -416,7 +405,6 @@ public class Storage {
         } catch (Exception e) {
             System.out.println("Error loading alert history: " + e.getMessage());
         }
-
         return alertHistory;
                 DispenseRecord record = DispenseRecord.fromStorageString(line);
                 if (record == null) {
@@ -432,5 +420,68 @@ public class Storage {
             System.out.println("Error loading dispense log: " + e.getMessage());
         }
         return log;
+    }
+
+    /**
+     * Saves all dispense records to the dispense log file.
+     * Each record is written as one pipe-delimited line.
+     *
+     * @param dispenseLog The dispense log to persist.
+     */
+    public void saveDispenseLog(seedu.pharmatracker.dispense.DispenseLog dispenseLog) {
+        if (dispenseLog == null) {
+            return;
+        }
+        try {
+            File file = new File(DISPENSE_LOG_FILE_PATH);
+            file.getParentFile().mkdirs();
+            FileWriter fw = new FileWriter(file);
+            for (seedu.pharmatracker.dispense.DispenseRecord record : dispenseLog.getRecords()) {
+                fw.write(record.getMedicationName() + DELIMITER
+                        + record.getQuantity() + DELIMITER
+                        + record.getCustomerId() + DELIMITER
+                        + record.getTimestamp() + "\n");
+            }
+            fw.close();
+        } catch (IOException e) {
+            System.out.println("Error saving dispense log: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Loads dispense records from the dispense log file.
+     *
+     * @return A DispenseLog populated with persisted records.
+     */
+    public seedu.pharmatracker.dispense.DispenseLog loadDispenseLog() {
+        seedu.pharmatracker.dispense.DispenseLog dispenseLog =
+                new seedu.pharmatracker.dispense.DispenseLog();
+        File file = new File(DISPENSE_LOG_FILE_PATH);
+        if (!file.exists()) {
+            return dispenseLog;
+        }
+        try {
+            Scanner sc = new Scanner(file);
+            while (sc.hasNextLine()) {
+                String line = sc.nextLine().trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+                String[] parts = line.split("\\|", -1);
+                if (parts.length < 4) {
+                    continue;
+                }
+                dispenseLog.addRecord(new seedu.pharmatracker.dispense.DispenseRecord(
+                        parts[0],
+                        Integer.parseInt(parts[1]),
+                        parts[2],
+                        parts[3]
+                ));
+            }
+            sc.close();
+        } catch (Exception e) {
+            System.out.println("Error loading dispense log: " + e.getMessage());
+        }
+        return dispenseLog;
     }
 }
