@@ -108,6 +108,18 @@ public class DispenseCommand extends Command {
             return;
         }
 
+        // Allergy check before dispensing
+        if (isCustomerLinked() && isValidCustomerIndex(customerList)) {
+            Customer allergyCustomer = customerList.getCustomer(customerIndex - 1);
+            if (allergyCustomer != null && allergyCustomer.isAllergicTo(med.getName())) {
+                String matched = allergyCustomer.getMatchedAllergen(med.getName());
+                logger.log(Level.WARNING, "Allergy conflict: customer={0}, allergen={1}, medication={2}",
+                        new Object[]{allergyCustomer.getName(), matched, med.getName()});
+                ui.printAllergyWarning(allergyCustomer.getName(), matched);
+                return;
+            }
+        }
+
         performDispense(med);
 
         // Record to daily dispense log

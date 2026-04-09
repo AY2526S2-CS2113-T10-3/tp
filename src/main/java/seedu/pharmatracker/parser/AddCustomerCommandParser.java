@@ -1,5 +1,7 @@
 package seedu.pharmatracker.parser;
 
+import java.util.ArrayList;
+
 import seedu.pharmatracker.command.AddCustomerCommand;
 import seedu.pharmatracker.exceptions.PharmaTrackerException;
 
@@ -24,6 +26,7 @@ public class AddCustomerCommandParser implements Parser<AddCustomerCommand> {
         String customerName = CustomerParserUtil.extractCustomerName(description);
         String phone = CustomerParserUtil.extractCustomerPhone(description);
         String address = CustomerParserUtil.extractCustomerAddress(description);
-        return new AddCustomerCommand(id, customerName, phone, address);
+        ArrayList<String> allergies = CustomerParserUtil.extractCustomerAllergies(description);
+        return new AddCustomerCommand(id, customerName, phone, address, allergies);
     }
 }

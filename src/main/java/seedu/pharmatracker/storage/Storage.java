@@ -146,11 +146,13 @@ public class Storage {
             for (int i = 0; i < customerList.size(); i++) {
                 seedu.pharmatracker.customer.Customer c = customerList.getCustomer(i);
                 String joinedHistory = String.join(HISTORY_SEPARATOR, c.getDispensingHistory());
+                String joinedAllergies = String.join(",", c.getAllergies());
                 fw.write(c.getCustomerId() + " | "
                         + c.getName() + " | "
                         + c.getPhone() + " | "
                         + c.getAddress() + " | "
-                        + joinedHistory + "\n");
+                        + joinedHistory + " | "
+                        + joinedAllergies + "\n");
             }
             fw.close();
         } catch (java.io.IOException e) {
@@ -184,6 +186,14 @@ public class Storage {
                         String[] historyEntries = parts[4].split(HISTORY_SEPARATOR);
                         for (String entry : historyEntries) {
                             c.addDispensingHistory(entry);
+                        }
+                    }
+                    if (parts.length > 5 && !parts[5].trim().isEmpty()) {
+                        for (String allergy : parts[5].split(",")) {
+                            String trimmed = allergy.trim();
+                            if (!trimmed.isEmpty()) {
+                                c.addAllergy(trimmed);
+                            }
                         }
                     }
                     list.addCustomer(c);

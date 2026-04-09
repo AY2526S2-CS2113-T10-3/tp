@@ -230,6 +230,8 @@ public class Ui {
         System.out.printf("%-20s %s%n", "Phone:", customer.getPhone());
         System.out.printf("%-20s %s%n", "Address:",
                 customer.getAddress().isEmpty() ? "N/A" : customer.getAddress());
+        System.out.printf("%-20s %s%n", "Allergies:",
+                customer.getAllergies().isEmpty() ? "None" : String.join(", ", customer.getAllergies()));
         System.out.println("----------------------------------------");
         System.out.println("DISPENSING HISTORY");
         System.out.println("----------------------------------------");
@@ -377,6 +379,22 @@ public class Ui {
     }
 
     /**
+     * Prints an allergy conflict warning when a medication is about to be dispensed
+     * to a customer with a known allergy to that medication.
+     * The dispense operation should be aborted after this message is printed.
+     *
+     * @param customerName The name of the customer with the allergy.
+     * @param allergen     The matched allergen keyword that triggered the warning.
+     */
+    public void printAllergyWarning(String customerName, String allergen) {
+        System.out.println(DIVIDER);
+        System.out.println("WARNING: Allergy conflict detected!");
+        System.out.println("Customer \"" + customerName + "\" has a recorded allergy to \"" + allergen + "\".");
+        System.out.println("Dispense aborted. Please verify with a pharmacist before proceeding.");
+        System.out.println(DIVIDER);
+    }
+
+    /**
      * Prints a confirmation message after a customer record has been successfully updated.
      *
      * @param customer The updated {@link Customer}.
@@ -409,18 +427,18 @@ public class Ui {
      * @param customerList The list of customers to display.
      */
     public void printCustomerList(CustomerList customerList) {
+        System.out.println(DIVIDER);
         if (customerList.size() == 0) {
             System.out.println("No customers registered yet.");
         } else {
-            System.out.println(DIVIDER);
             System.out.println("PharmaTracker Customers:");
             for (int i = 0; i < customerList.size(); i++) {
                 Customer customer = customerList.getCustomer(i);
                 System.out.println((i + 1) + ". " + customer.toString());
             }
             System.out.println("Total Customers: " + customerList.size() + ".");
-            System.out.println(DIVIDER);
         }
+        System.out.println(DIVIDER);
     }
 
     public void printUpdatedMedicationMessage(Medication med, ArrayList<String> changes) {
