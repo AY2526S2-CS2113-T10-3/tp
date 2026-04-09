@@ -17,7 +17,8 @@ public class AddCustomerCommandTest {
 
     @Test
     void constructor_validInputs_success() {
-        assertDoesNotThrow(() -> new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road", new ArrayList<>()));
+        assertDoesNotThrow(() -> new AddCustomerCommand("C001", "John Doe", "91234567",
+                "123 Clementi Road", new ArrayList<>()));
     }
 
     @Test
@@ -65,7 +66,8 @@ public class AddCustomerCommandTest {
     @Test
     void execute_validParameters_customerAddedToCustomerList() {
         // Setup
-        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road", new ArrayList<>());
+        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567",
+                "123 Clementi Road", new ArrayList<>());
         Inventory inventory = new Inventory();
         Ui ui = new Ui();
         CustomerList customerList = new CustomerList();
@@ -83,7 +85,8 @@ public class AddCustomerCommandTest {
 
     @Test
     void execute_nullUi_throwsAssertionError() {
-        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road", new ArrayList<>());
+        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567",
+                "123 Clementi Road", new ArrayList<>());
         Inventory inventory = new Inventory();
         CustomerList customerList = new CustomerList();
 
@@ -93,7 +96,8 @@ public class AddCustomerCommandTest {
 
     @Test
     void execute_nullCustomerList_throwsAssertionError() {
-        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567", "123 Clementi Road", new ArrayList<>());
+        AddCustomerCommand command = new AddCustomerCommand("C001", "John Doe", "91234567",
+                "123 Clementi Road", new ArrayList<>());
         Inventory inventory = new Inventory();
         Ui ui = new Ui();
 

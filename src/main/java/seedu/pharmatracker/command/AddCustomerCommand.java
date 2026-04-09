@@ -34,7 +34,8 @@ public class AddCustomerCommand extends Command {
      * @param address    Residential address of the customer (can be empty if not provided).
      * @param allergies  List of known allergy keywords (may be empty).
      */
-    public AddCustomerCommand(String customerId, String name, String phone, String address, ArrayList<String> allergies) {
+    public AddCustomerCommand(String customerId, String name, String phone,
+                              String address, ArrayList<String> allergies) {
         assert customerId != null && !customerId.isEmpty() : "Customer ID cannot be null or empty";
         assert name != null && !name.isEmpty() : "Customer name cannot be null or empty";
         assert phone != null && !phone.isEmpty() : "Customer phone cannot be null or empty";

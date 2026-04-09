@@ -418,9 +418,9 @@ public class DispenseCommandTest {
         assertEquals(2, customerList.getCustomer(0).getDispensingHistory().size());
     }
 
-// -------------------------------------------------------------------------
-// Allergy check
-// -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Allergy check
+    // -------------------------------------------------------------------------
 
     /**
      * Tests that dispensing is aborted when the linked customer is allergic to the medication.
