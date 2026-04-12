@@ -2,6 +2,8 @@ package seedu.pharmatracker.data;
 
 import java.util.ArrayList;
 
+import seedu.pharmatracker.customer.Customer;
+
 /**
  * Represents the inventory of medications in the PharmaTracker application.
  * Manages the storage, addition, removal and retrieval of {@link Medication} objects.
@@ -113,6 +115,32 @@ public class Inventory {
                     + " | Expiry: " + med.getExpiryDate()
                     + " | Tag: " + med.getTag());
         }
+    }
+
+    /**
+     * Checks if a medication already exists in the list.
+     * Note that a medication is not considered a duplicate if it has the same details but a different expiry date.
+     *
+     * @param name       The name of the medication.
+     * @param dosage     The strength or dosage of the medication.
+     * @param expiryDate The expiration date in YYYY-MM-DD format.
+     * @return true if the medication already exists, false otherwise.
+     */
+    public boolean containsMedication(String name, String dosage, String expiryDate) {
+        if (name == null || dosage == null || expiryDate == null) {
+            return false;
+        }
+
+        for (Medication med : medications) {
+            if (name.equalsIgnoreCase(med.getName()) &&
+                    med.getDosage().equalsIgnoreCase(dosage) &&
+                    med.getExpiryDate().equalsIgnoreCase(expiryDate)) {
+                return true;
+            }
+        }
+
+        return false;
+
     }
 
 }
