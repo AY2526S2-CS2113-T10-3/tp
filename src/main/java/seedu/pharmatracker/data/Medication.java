@@ -187,7 +187,7 @@ public class Medication {
             return expiryDateParsed.isBefore(LocalDate.now());
         } catch (DateTimeParseException e) {
             // This would only happen if legacy data exists in the .txt file
-            return false;
+            return true;
         }
     }
 
