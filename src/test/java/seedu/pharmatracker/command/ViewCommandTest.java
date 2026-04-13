@@ -184,20 +184,18 @@ public class ViewCommandTest {
     }
 
     /**
-     * Tests that "view" with no index returns null.
+     * Tests that "view" with no index throws Exception.
      */
     @Test
-    public void parser_viewCommandNoIndex_returnsNull() throws PharmaTrackerException {
-        Command c = PharmaTrackerParser.parse("view");
-        assertEquals(null, c);
+    public void parser_viewCommandNoIndex_throwsException() {
+        assertThrows(PharmaTrackerException.class, () -> PharmaTrackerParser.parse("view"));
     }
 
     /**
-     * Tests that "view abc" with a non-integer index returns null.
+     * Tests that "view abc" with a non-integer index throws Exception.
      */
     @Test
-    public void parser_viewCommandInvalidIndex_returnsNull() throws PharmaTrackerException {
-        Command c = PharmaTrackerParser.parse("view abc");
-        assertEquals(null, c);
+    public void parser_viewCommandInvalidIndex_throwsException() {
+        assertThrows(PharmaTrackerException.class, () -> PharmaTrackerParser.parse("view abc"));
     }
 }
