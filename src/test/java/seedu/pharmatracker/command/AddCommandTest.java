@@ -3,6 +3,7 @@ package seedu.pharmatracker.command;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 
@@ -96,13 +97,52 @@ public class AddCommandTest {
      * multiple medications to the {@code Inventory} without overwriting previous entries.
      */
     @Test
-    public void execute_multipleAddCommands_appendsToInventory() throws PharmaTrackerException {
+    public void execute_multipleAddCommands_appendsSuccessfully() throws PharmaTrackerException {
         Inventory inventory = getInventory();
         assertEquals(2, inventory.getMedications().size());
 
         Medication secondMed = inventory.getMedication(1);
         assertEquals("MedB", secondMed.getName());
         assertEquals("Tablet", secondMed.getDosageForm());
+    }
+
+    @Test
+    public void execute_duplicateMedication_throwsPharmaTrackerException() throws PharmaTrackerException {
+        Inventory inventory = new Inventory();
+        Ui ui = new Ui();
+        CustomerList customerList = new CustomerList();
+        ArrayList<String> emptyWarnings = new ArrayList<>();
+
+        // Add the first medication
+        AddCommand firstCommand = new AddCommand(
+                "Paracetamol", "500mg", 100, "2026-12-31", "painkiller",
+                "", "", "", "", "", "", emptyWarnings
+        );
+        firstCommand.execute(inventory, ui, customerList);
+
+        // Attempt to add the exact same medication
+        AddCommand duplicateCommand = new AddCommand(
+                "Paracetamol", "500mg", 100, "2026-12-31", "painkiller",
+                "", "", "", "", "", "", emptyWarnings
+        );
+
+        // Expecting the PharmaTrackerException since you converted the print messages
+        PharmaTrackerException thrown = assertThrows(PharmaTrackerException.class,
+                () -> duplicateCommand.execute(inventory, ui, customerList));
+
+        assertEquals("Failed to add medication.\nUse the update command to update the medication as required.", thrown.getMessage());
+    }
+
+    @Test
+    public void execute_nullInventory_throwsAssertionError() {
+        Ui ui = new Ui();
+        CustomerList customerList = new CustomerList();
+        AddCommand command = new AddCommand(
+                "MedA", "10mg", 10, "2026-01-01", "tag1",
+                "", "", "", "", "", "", new ArrayList<>()
+        );
+
+        assertThrows(AssertionError.class, () -> command.execute(null, ui, customerList));
     }
 
     /**

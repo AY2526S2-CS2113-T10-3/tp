@@ -69,7 +69,7 @@ public class DeleteCommand extends Command {
                 throw new PharmaTrackerException("Invalid index. Please enter a number between 1 and " +
                         medicationCount + ".");
             } else {
-                throw new PharmaTrackerException("Invalid format. Please provide a valid number for the index. ");
+                throw new PharmaTrackerException("Invalid format. Please provide a valid number for the index.");
             }
         }
     }
