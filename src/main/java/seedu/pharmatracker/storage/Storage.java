@@ -42,8 +42,8 @@ public class Storage {
             for (Medication med : (ArrayList<Medication>) inventory.getMedications()) {
                 assert med != null : "Medication entry should not be null";
                 String warnings = String.join(WARNINGS_SEPARATOR, med.getWarnings());
-                fw.write(sanitize(med.getName()) + DELIMITER
-                        + sanitize(med.getDosage()) + DELIMITER
+                fw.write(med.getName() + DELIMITER
+                        + med.getDosage() + DELIMITER
                         + med.getQuantity() + DELIMITER
                         + med.getExpiryDate() + DELIMITER
                         + med.getTag() + DELIMITER
