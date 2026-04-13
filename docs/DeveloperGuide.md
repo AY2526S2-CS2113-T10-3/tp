@@ -1,5 +1,56 @@
 # Developer Guide
 
+## Table of Contents
+
+- [Acknowledgements](#acknowledgements)
+- [Setting up, getting started](#setting-up-getting-started)
+- [Design](#design)
+    - [Architecture](#architecture)
+    - [Command Component](#command-component)
+    - [Storage Component](#storage-component)
+    - [UI Component](#ui-component)
+- [Implementation](#implementation)
+    - [Add Medication Feature](#add-medication-feature)
+    - [Delete Medication Feature](#delete-medication-feature)
+    - [Find Medication Feature](#find-medication-feature)
+    - [View Medication Feature](#view-medication-feature)
+    - [Update Medication Feature](#update-medication-feature)
+    - [List Medication Feature](#list-medication-feature)
+    - [Add Customers Feature](#add-customer-feature)
+    - [Delete Customers Feature](#delete-customer-feature)
+    - [List Customers Feature](#list-customers-feature)
+    - [Restock Medication Feature](#restock-medication-feature)
+    - [Dispense with Customer Linking Feature](#dispense-with-customer-linking-feature)
+    - [Allergy Check Feature](#allergy-check-feature)
+    - [Find Customer Feature](#find-customer-feature)
+    - [View Customer Feature](#view-customer-feature)
+    - [Update Customer Feature](#update-customer-feature)
+    - [Sort Medication Feature](#sort-medication-feature)
+    - [Low Stock Feature](#low-stock-feature)
+    - [Expiring Medications Feature](#expiring-medications-feature)
+    - [Label Feature](#label-feature)
+    - [Daily Dispense Log Feature](#daily-dispense-log-feature)
+    - [User Authentication Feature](#user-authentication-feature)
+    - [Auto Restock Alerts Feature](#auto-restock-alerts-feature)
+    - [Management of Customers](#management-of-customers)
+- [Product scope](#product-scope)
+    - [Target user profile](#target-user-profile)
+    - [Value proposition](#value-proposition)
+- [User Stories](#user-stories)
+- [Non-Functional Requirements](#non-functional-requirements)
+- [Glossary](#glossary)
+- [Instructions for manual testing](#instructions-for-manual-testing)
+    - [Launching the application](#launching-the-application)
+    - [Adding a medication](#adding-a-medication)
+    - [Listing medications](#listing-medications)
+    - [Finding a medication](#finding-a-medication)
+    - [Listing customers](#listing-customers)
+    - [Restocking a medication](#restocking-a-medication)
+    - [Dispensing with customer linking](#dispensing-with-customer-linking)
+    - [Updating a customer](#updating-a-customer)
+    - [Checking low stock](#checking-low-stock)
+    - [Viewing the daily dispense log](#viewing-the-daily-dispense-log)
+
 ## Acknowledgements
 
 Beyond the Java Standard Library, no other libraries were used. No code was reused as well.
@@ -31,8 +82,21 @@ The key components of the system are outlined below.
 | `Command` (abstract) | Defines the required `execute()` contract. Concrete command classes (e.g., `AddCommand`, `DispenseCommand`) implement this to interact with the application's data. |
 | `Inventory`          | The in-memory data structure that stores and manages all `Medication` records.                                                                                      |
 | `CustomerList`       | The in-memory data structure that manages registered `Customer` profiles and their dispensing histories.                                                            |
+| `AuthService`        | Manages user registration/login/logout, password verification, and current session state.                                                                            |
+| `RestockAlertService`| Evaluates stock against medication thresholds, tracks active alerts, and maintains alert history.                                                                    |
 | `Storage`            | Handles the serialization and deserialization of data to a local text file (`data/pharmatracker.txt`) to ensure data persistence across sessions.                   |
 | `Ui`                 | Manages all interactions with the user, including reading terminal inputs and printing formatted outputs to the console.                                            |
+
+The following component diagram provides a high-level overview of how these components relate to one another:
+
+![Architecture Component Diagram](images/Architecture.png)
+
+A few key relationships to note:
+
+- **User → UI → Parser → Commands**: The main data flow follows a strict top-down path. The user interacts exclusively with `Ui`, which hands raw input to `PharmaTrackerParser`. The parser instantiates the appropriate `Command` subclass, which is then executed by the main loop.
+- **Commands → AppServices → AuthService / RestockAlertService**: Commands do not call `AuthService` or `RestockAlertService` directly. Instead, they go through `AppServices`, a static singleton that acts as a service locator. This avoids passing service references through every constructor and keeps the `Command` API clean.
+- **Commands ↔ Storage ↔ Model**: `Commands` read and modify the in-memory `Inventory` and `CustomerList`. After each command executes, `PharmaTracker` delegates to `Storage` to persist those changes to disk.
+- **Commons (dashed)**: `LoggerSetup` and `PharmaTrackerException` are shared utilities consumed across the application. They are shown with dashed lines to indicate a supporting dependency rather than a primary data flow.
 
 The following sequence diagram illustrates the complete runtime flow of PharmaTracker, from app initialization through 
 the continuous command execution loop:
@@ -48,7 +112,8 @@ The `Command` component follows the Command pattern. Every command implements th
 The `Storage` component handles the persistence of both medications and patient records.
 * **Medication Data**: Serialized to `data/pharmatracker.txt`.
 * **Customer Data**: Serialized to `data/customers.txt`.
-  The system uses a pipe-delimited format for high-level attributes. For patient dispensing history, which can contain multiple entries, the data is collapsed into a single string segment using a semicolon separator (`;`) to prevent line-break corruption in the text file.
+
+The system uses a pipe-delimited format for medication data. Customer data uses a tab-delimited format to prevent column corruption: dispensing history entries contain ` | ` separators internally, so a different column delimiter is required. For patient dispensing history, which can contain multiple entries, the individual records are joined using a semicolon separator (`;`) within the history column. Customer allergies are stored as a comma-separated string in the sixth tab-delimited column (e.g. `penicillin,aspirin`). Files saved before the allergy feature was introduced contain only five columns and load cleanly with an empty allergy list, ensuring backward compatibility.
 
 ### UI Component
 
@@ -66,10 +131,6 @@ To maintain a clean architecture, the UI component is strictly separated from th
 * **No Direct Printing:** Developers should **never** use `System.out.println()` directly within `Command`, `Parser`, or `Inventory` classes.
 * **Data Handoff:** If a command needs to display a result, it must process the data and pass the relevant object to a specific method inside the `Ui` class to handle the actual printing.
 
-The following class diagram summarizes the `Ui` component's primary API. *(Note: Private string constants and standard constructors are omitted to reduce visual clutter).*
-
-![UI Component Class Diagram](images/UiClassDiagram.png)
-
 ## Implementation
 
 This section describes some noteworthy details on how certain features are implemented.
@@ -78,33 +139,27 @@ This section describes some noteworthy details on how certain features are imple
 
 ### Add Medication Feature
 
-This add-medication mechanism allows users to record a new medication
-with the name, dosage, quantity and expiry date information.
+This add-medication mechanism allows users to record a new medication with mandatory details (name, dosage, quantity, and expiry date) as well as comprehensive optional clinical information.
 ```
-add /n NAME /d DOSAGE /q QUANTITY /e EXPIRY [/t TAG]
+add /n NAME /d DOSAGE /q QUANTITY /e EXPIRY [/t TAG] [/df DOSAGE_FORM] [/mfr MANUFACTURER] [/dir DIRECTIONS] [/freq FREQUENCY] [/route ROUTE] [/max MAX_DAILY_DOSE] [/warn WARNING]
 ```
 #### How it works
 
 The following steps describe how an add command is processed.
 
-1. The user enters `add /n Paracetamol /d 500mg /q 100 /e 2026-12-31 
-   /t Painkiller /df Tablet /warn May cause drowsiness`.
-2. `PharmaTracker.run()` reads the user input and passes the raw string to `Parser.parse()`.
-3. `Parser.parse()` identifies the command word `add`.
-4. The parser first delegates to specific extract methods
-   (`extractName()`, `extractDosage()`, `extractQuantity` and `extractExpiryDate()`).
-   These methods validate that the mandatory flags (`/n`, `/d`, `/q`, `/e`) are present
-   and in the correct relative order.
-5. Next, the parser extracts optional attributes using the `extractFlag()` method. 
-   To allow users to input optional flags in any order, `extractFlag()` relies on a helper method called
-   `findNextFlagIndex()`. This helper scans the remainder of the input string against a predefined array of 
-   `ALL_FLAGS` to dynamically determine where the current flag's value ends and where the next one begins. 
-6. For warnings, the parser uses `extractWarnings()`, which loops through the input string to locate all
-   occurrences of the `/warn` flag, compiling them into an `ArrayList<String>`.
-7. All extracted values (both compulsory and optional) are passed into the `AddCommand` constructor 
-   to create a new `AddCommand` object.
+1. The user enters `add /n Paracetamol /d 500mg /q 100 /e 2026-12-31 /t Painkiller /df Tablet /warn May cause drowsiness`.
+2. `PharmaTracker.run()` reads the user input and passes the raw string to `PharmaTrackerParser.parse()`.
+3. `PharmaTrackerParser.parse()` identifies the command word `add` and delegates the remaining description string to `AddCommandParser.parse()`.
+4. `AddCommandParser` first uses specific extraction methods from `MedicationParserUtil` (`extractName()`, `extractDosage()`, `extractQuantity()`, and `extractExpiryDate()`). These methods validate that the mandatory flags (`/n`, `/d`, `/q`, `/e`) are present, properly formatted, and in the correct relative order.
+5. Next, the parser extracts the optional attributes (Tag, Dosage Form, Manufacturer, Directions, Frequency, Route, Max Daily Dose) using the `ParserUtil.extractFlag()` method. To allow users to input optional flags in any order, `extractFlag()` relies on a helper method called `findNextFlagIndex()`. This helper scans the remainder of the input string against a predefined array of `ALL_FLAGS` to dynamically determine where the current flag's value ends and where the next one begins.
+6. For warnings, the parser uses `MedicationParserUtil.extractWarnings()`, which loops through the input string to locate all occurrences of the `/warn` flag, compiling them into an `ArrayList<String>`.
+7. All extracted values (both compulsory and optional) are passed into the `AddCommand` constructor to create a new `AddCommand` object.
 8. `PharmaTracker.run()` calls `AddCommand.execute()`, which creates a new `Medication` object and adds it to the `Inventory`. 
 9. Finally, `Ui.printAddedMessage()` is called to display a confirmation message to the user.
+
+The following class diagram shows the interaction between the `AddCommand` class with other classes. 
+
+![Class diagram for Add Command](images/AddCommandClassDiagram.png)
 
 The following sequence diagram shows the full flow of the add command, including parsing and inventory updates:
 
@@ -123,17 +178,13 @@ delete INDEX
 The following steps describe how a delete command is processed.
 
 1. The user enters a delete command into the command line, specifying the index of the medication (e.g. `delete 1`)
-2. The Ui component reads the raw input string and passes it to the `PharmaTracker` main loop.
-3. `PharmaTracker` calls the `Parser.parse()` method with the input string.
-4. The `Parser` identifies that the `delete` command word, extracts the provided index string, and instantiates a
-   new `DeleteCommand` object with this description.
+2. `PharmaTracker.run()` reads the raw input string using `ui.readCommand()`.
+3. `PharmaTracker` passes the string to `PharmaTrackerParser.parse()`.
+4. `PharmaTrackerParser` identifies the `delete` command word, extracts the provided index string, and instantiates a new `DeleteCommand` object with this description.
 5. `PharmaTracker` calls the `execute(inventory, ui, customerList)` method on the newly created `DeleteCommand`.
-6. Inside the `execute` method, the string index is parsed into an integer and converted from a 1-based index to a
-   0-based index to match the internal `ArrayList` logic.
-7. The specific `Medication` object is retrieved from the `Inventory` using the `getMedication(zeroBasedIndex)`
-   method.
-8. The retrieved `Medication` object is passed to `inventory.removeMedication()`, which deletes it from the internal
-   list and decrements the medication count.
+6. Inside the `execute` method, the string index is parsed into an integer and converted from a 1-based index to a 0-based index to match the internal `ArrayList` logic.
+7. The specific `Medication` object is retrieved from the `Inventory` using the `getMedication(zeroBasedIndex)`method.
+8. The retrieved `Medication` object is passed to `inventory.removeMedication()`, which deletes it from the internal list and decrements the medication count.
 9. The `DeleteCommand` calls `ui.printDeletedMessage()` to display a success message to the user.
 
 ![Sequence diagram showing the execution flow of the Delete Command](images/DeleteCommandSequence.png)
@@ -228,9 +279,9 @@ update INDEX [/n NAME] [/d DOSAGE] [/q QUANTITY] [/e EXPIRY] [/t TAG] [/df DOSAG
 ### How It Works
 
 1. The user enters an update command, e.g., `update 1 /q 50 /t Urgent`.
-2. `PharmaTracker.run()` reads the input and passes the raw string to `Parser.parse()`.
-3. `Parser.parse()` identifies the command word `update`.
-4. The parser isolates the target index and extracts optional flags (e.g., `/n`, `/q`, `/e`) using utility methods like `extractOptionalFlag()` and `extractOptionalQuantity()`. These methods return the updated values or `null` if a flag is absent.
+2. `PharmaTracker.run()` reads the input and passes the raw string to `PharmaTrackerParser.parse()`.
+3. `PharmaTrackerParser.parse()` identifies the command word `update` and delegates the remaining arguments string to `UpdateCommandParser.parse()`.
+4. `UpdateCommandParser` isolates the target index and extracts the optional flags using utility methods like `ParserUtil.extractOptionalFlag()`, `MedicationParserUtil.extractOptionalQuantity()`, and `MedicationParserUtil.extractWarnings()`. These methods return the updated values, or null (and empty lists for warnings) if a flag is absent.
 5. An `UpdateCommand` object is instantiated with the index and the extracted fields. Unspecified fields are passed as `null`.
 6. `PharmaTracker.run()` calls `UpdateCommand.execute()`, which validates the target index against the current size of the inventory. If invalid, an error message is printed and the command returns early.
 7. For a valid index, the corresponding `Medication` object is retrieved from the `Inventory`.
@@ -238,7 +289,7 @@ update INDEX [/n NAME] [/d DOSAGE] [/q QUANTITY] [/e EXPIRY] [/t TAG] [/df DOSAG
 9. As fields are updated, descriptions of the changes are appended to an `ArrayList<String> changes`.
 10. Finally, `Ui.printUpdatedMedicationMessage()` is called with the updated `Medication` and the `changes` list to generate a dynamic success message showing exactly what was modified.
 
-![Sequence diagram showing the execution flow of the Update Command](images/UpdateCommandSequence.png)
+
 ---
 ### List Medication Feature
 
@@ -253,7 +304,7 @@ The `list` feature provides a summary view of the entire inventory, allowing use
 5.  `ListCommand.execute()` retrieves the list of all medications from `Inventory.getMedications()`.
 6.  The command iterates through the collection. For each `Medication` object:
     * It retrieves the name, dosage, quantity, and expiry date.
-    * It checks the stock level; if the quantity is $\leq 10$, a `[LOW STOCK]` indicator is appended to the output string.
+    * It checks the stock level; if the quantity is $< 20$, a `[LOW STOCK]` indicator is appended to the output string (matching the default threshold for the `lowstock` command).
 7.  The formatted list is passed to the `Ui` component for display, followed by a summary count of total medications.
 
 #### Design Considerations
@@ -262,18 +313,61 @@ The `list` feature provides a summary view of the entire inventory, allowing use
 |:--- |:--- |:--- |
 | **Information Density** | High-level summary | Keeps the output clean and scannable; users can use `view` for full details. |
 | **Index Alignment** | 1-based numbering | Ensures the index shown to the user matches the input requirements for index-based commands. |
-| **Stock Warning** | Hardcoded threshold ($\leq 10$) | Provides immediate visual priority for items needing replenishment without requiring a separate query. |
+| **Stock Warning** | Consistent threshold (20) | Provides immediate visual priority for items needing replenishment, matching the default threshold for the `lowstock` command to ensure consistency across features. |
 
 ### Manual Testing: List Feature
 
 1.  **Test case:** `list` (with items in inventory)
 2.  **Expected:** A numbered list appears. Each line follows the format `NAME | DOSAGE | Qty: QUANTITY | Expiry: DATE`.
-3.  **Low stock check:** Verify that any item with a quantity of 10 or less displays the `[LOW STOCK]` tag.
+3.  **Low stock check:** Verify that any item with a quantity less than 20 displays the `[LOW STOCK]` tag.
 4.  **Summary check:** Ensure the "Total Medications" count at the bottom matches the number of items listed.
 
 ![Sequence diagram showing the execution flow of the List Command](images/ListCommandSequence.png)
 
 ---
+### Add Customer Feature
+
+The `add-customer` command allows users to register a new customer profile in the database. This profile stores the customer's unique ID, name, contact number, and optionally, their residential address, enabling the system to track their dispensing history later.
+
+#### How it works
+
+1. The user enters the command into the CLI, specifying the customer details (e.g., `add-customer /id C001 /n John Doe /p 91234567 /addr 123 Clementi Rd`).
+2. `PharmaTracker.run()` reads the input and passes the raw string to `PharmaTrackerParser.parse()`.
+3. `PharmaTrackerParser` identifies the `add-customer` command word and delegates the remaining argument string to `AddCustomerCommandParser.parse()`.
+4. `AddCustomerCommandParser` extracts the required and optional fields using `CustomerParserUtil`.
+5. The extraction methods (`extractCustomerID()`, `extractCustomerName()`, and `extractCustomerPhone()`) validate that the mandatory flags (`/id`, `/n`, `/p`) are present and in the correct relative order.
+6. The phone number extraction also strictly verifies that the number is a valid Singaporean format (starting with '8' or '9').
+7. `extractCustomerAddress()` attempts to find the `/addr` flag; if absent, it safely returns an empty string.
+8. The extracted strings are passed into the `AddCustomerCommand` constructor to instantiate the command object.
+9. `PharmaTracker` calls the `execute()` method on the newly created `AddCustomerCommand`.
+10. Inside the `execute()` method, a new `Customer` object is instantiated using the parsed details.
+11. The newly created `Customer` is passed to `customerList.addCustomer()`, appending them to the active database and incrementing the total customer count.
+12. Finally, the command calls `Ui.printAddedCustomerMessage()` to display a success confirmation and the updated customer tally to the user.
+
+![Sequence diagram showing the execution flow of the Add Customer Command](images/AddCustomerCommandSequence.png)
+
+---
+
+### Delete Customer Feature
+
+The `delete-customer` command allows users to remove an existing customer profile from the database. The customer to be removed is identified by their 1-based index as displayed in the current customer list.
+
+#### How it works
+
+1. The user enters a delete customer command into the command line, specifying the index of the customer (e.g., `delete-customer 1`).
+2. `PharmaTracker.run()` reads the raw input string using `ui.readCommand()`.
+3. `PharmaTracker` passes the string to `PharmaTrackerParser.parse()`.
+4. `PharmaTrackerParser` identifies the `delete-customer` command word. Because this command only requires a single index argument, the parser directly extracts the provided index string and instantiates a new `DeleteCustomerCommand` object with this description string, without needing a dedicated sub-parser.
+5. `PharmaTracker` calls the `execute()` method on the newly created `DeleteCustomerCommand`.
+6. Inside the `execute()` method, the string description is parsed into an integer. If the string is not a valid number, a `NumberFormatException` is caught and an error message is displayed to the user.
+7. The command then validates the parsed index. If it is within the valid range of 1 to `customerList.getCustomerCount()`, the 1-based index is converted to a 0-based index to match the internal `ArrayList` structure.
+8. The specific `Customer` object is retrieved from the `CustomerList` using the `getCustomer(zeroBasedIndex)` method.
+9. The retrieved `Customer` object is passed to `customerList.removeCustomer()`, which deletes the record from the internal list and safely decrements the total customer count.
+10. Finally, the `DeleteCustomerCommand` calls `ui.printDeletedCustomerMessage()` to display a success message and the updated customer tally to the user.
+
+![Sequence diagram showing the execution flow of the Delete Customer Command](images/DeleteCustomerCommandSequence.png)
+---
+
 ### List Customers Feature
 
 The `list-customers` command retrieves and displays all registered customers with their
@@ -357,31 +451,36 @@ The following sequence diagram shows the full execution flow of the `restock` co
 
 ### Dispense with Customer Linking Feature
 
-Extends the existing `dispense` command with an optional `c/CUSTOMER_INDEX` flag. When the
+Extends the existing `dispense` command with an optional `/c CUSTOMER_INDEX` flag. When the
 flag is provided, the dispensed medication is recorded in that customer's dispensing history.
-Omitting `c/` retains the original behaviour exactly — no customer data is read or written.
+Omitting `/c` retains the original behaviour exactly — no customer data is read or written.
 
 ```
-dispense INDEX q/QUANTITY [c/CUSTOMER_INDEX]
+dispense INDEX /q QUANTITY [/c CUSTOMER_INDEX]
 ```
 
 #### How it works
 
-1. The user enters `dispense 1 q/20 c/1` (or `dispense 1 q/20` without customer linking).
+1. The user enters `dispense 1 /q 20 /c 1` (or `dispense 1 /q 20` without customer linking).
 2. `PharmaTracker.run()` passes the raw string to `Parser.parse()`.
 3. `Parser.parse()` identifies the command word `dispense`, then:
    - Extracts the medication index from the leading portion of the description.
-   - Locates the `q/` flag and parses the quantity.
-   - Checks for the optional `c/` flag. If present, its value is parsed as an integer
+   - Locates the `/q` flag and parses the quantity.
+    - Checks for the optional `/c` flag. If present, its value is parsed as an integer
      `customerIndex`; if absent, the two-argument constructor is used, which internally
      sets `customerIndex` to the sentinel value `NO_CUSTOMER` (-1).
 4. A `DispenseCommand` object is constructed via the appropriate constructor.
 5. `PharmaTracker.run()` calls `DispenseCommand.execute()`, which performs the following
    validation before modifying any data:
    - If the medication index is out of range, an error is printed and the command returns early.
+    - If the medication is expired, an error is printed and the command returns early. Stock is
+       **not** decremented.
    - If the quantity exceeds current stock, an error is printed and the command returns early.
    - If `customerIndex != NO_CUSTOMER` and the customer index is out of range, an error is
      printed and the command returns early. Stock is **not** decremented in this case.
+   - If `customerIndex != NO_CUSTOMER` and the linked customer has a recorded allergy that
+     matches the medication name (case-insensitive substring match), `Ui.printAllergyWarning()`
+     is called and the command returns early. Stock is **not** decremented.
 6. All validations passed: `medication.setQuantity(medication.getQuantity() - quantity)`
    decrements the stock.
 7. If `customerIndex != NO_CUSTOMER`, `CustomerList.getCustomer(customerIndex - 1)` retrieves
@@ -391,7 +490,7 @@ dispense INDEX q/QUANTITY [c/CUSTOMER_INDEX]
    customer's ID and name.
 
 The following sequence diagram shows the full execution flow of `dispense` with customer
-linking. The `[c/ flag present]` alt branch is only entered when a customer index is supplied:
+linking. The `[/c flag present]` alt branch is only entered when a customer index is supplied:
 
 ![Sequence diagram showing the execution flow of the Dispense Command with Customer Linking](images/DispenseCommandSequence.png)
 
@@ -399,11 +498,99 @@ linking. The `[c/ flag present]` alt branch is only entered when a customer inde
 
 | Aspect | Choice | Reason |
 |--------|--------|--------|
-| Optional `c/` flag vs a separate command | Optional flag on existing command | Avoids duplicating stock-decrement logic; fully backward compatible — existing calls without `c/` are unaffected |
+| Optional `/c` flag vs a separate command | Optional flag on existing command | Avoids duplicating stock-decrement logic; fully backward compatible — existing calls without `/c` are unaffected |
 | Sentinel value `NO_CUSTOMER = -1` | Sentinel (`int`) over `Integer` / `null` | Avoids autoboxing and null-pointer risk on a primitive field; the sentinel is a named constant and self-documenting |
 | Customer index validated **before** stock decrement | Pre-decrement guard | Prevents a state where stock is already reduced but the customer record write then fails |
+| Allergy check positioned **after** customer index validation, **before** stock decrement | Pre-decrement guard | Ensures stock is never modified when dispensing is blocked by an allergy conflict |
+| Allergy matching via case-insensitive substring (`contains`) | Substring match | A stored allergen of `penicillin` correctly blocks `Penicillin V 500mg`; exact-match would be too brittle for real medication names |
 | Dispensing record stored on `Customer`, not `Medication` | `Customer` | The natural query is "what has this customer received?"; storing on `Medication` would require scanning every medication to reconstruct a customer's history |
 | Two constructors (2-arg and 3-arg) | Overloaded constructors | Keeps call sites for the no-customer case clean; the 2-arg constructor delegates to the 3-arg one via `this(index, quantity, NO_CUSTOMER)` |
+
+---
+
+---
+
+### Allergy Check Feature
+
+The allergy check is an automatic safety guard built into the `dispense` command. When a dispense
+is linked to a customer via `/c`, the system checks the customer's recorded allergens against the
+medication name before any stock is modified. If a match is found, dispensing is aborted.
+
+#### How it works
+
+The feature spans three layers:
+
+**Model (`Customer.java`)**
+- Each `Customer` holds an `ArrayList<String> allergies`, initialized to an empty list.
+- `addAllergy(String)` normalises input to lowercase and trims whitespace before storing.
+- `isAllergicTo(String medicationName)` performs a case-insensitive substring check: for each
+  stored allergen, it checks whether `medicationName.toLowerCase().contains(allergen)`.
+- `getMatchedAllergen(String medicationName)` returns the first allergen keyword that triggered
+  the match, used to produce a precise warning message.
+
+**Parser (`CustomerParserUtil.java`)**
+- `FLAG_ALLERGY = "/allergy"` is defined as a named constant.
+- `extractCustomerAllergies(String description)` splits the comma-separated value after the
+  `/allergy` flag and returns an `ArrayList<String>`. Returns an empty list if the flag is absent.
+- `FLAG_ADDRESS` was renamed from `/a` to `/addr` to eliminate an ambiguity: `/a` is a
+  prefix of `/allergy`, causing `indexOf("/a")` to falsely match inside `/allergy`. Using
+  `/addr` removes the collision entirely.
+
+**Command (`DispenseCommand.java`)**
+- The allergy check is performed after all index and stock validations, but before
+  `performDispense()` is called — ensuring stock is never decremented on a blocked dispense.
+- The check is only performed when `isCustomerLinked()` is true.
+
+#### Design Considerations
+
+| Aspect | Choice | Reason |
+|--------|--------|--------|
+| Substring match over exact match | `contains()` | Medication names often include strength and form (e.g. `Penicillin V 500mg Tablet`); exact match on `penicillin` would fail to block it |
+| Allergens stored lowercase | `toLowerCase()` on input | Normalises at write time; comparison is then a simple `contains()` with no extra lowercasing at read time |
+| `/a` renamed to `/addr` | Flag rename | Eliminates prefix collision with `/allergy` without requiring fragile character-lookahead logic |
+| Allergy check aborts silently (no partial execution) | Hard abort | Partial execution — e.g. stock decremented but record not written — would leave the system in an inconsistent state |
+| `setAllergies()` replaces rather than appends | Full replacement | Supports corrections; staff can re-declare the full list to remove a previously recorded allergen |
+
+---
+
+### Find Customer Feature
+
+The `find-customer` command searches the customer list for customers whose names contain a given
+keyword. The search is case-insensitive and supports partial matches.
+```
+find-customer KEYWORD
+```
+
+#### How it works
+
+1. The user enters `find-customer alice`.
+2. `PharmaTracker.run()` reads the user input and passes the raw string to `Parser.parse()`.
+3. `Parser.parse()` identifies the command word `find-customer` and extracts the remainder of
+   the input as the search keyword. If the keyword is empty, a `PharmaTrackerException` is
+   thrown with an error message and no command object is created.
+4. A new `FindCustomerCommand(keyword)` object is constructed with the extracted keyword.
+5. `PharmaTracker.run()` calls `FindCustomerCommand.execute()`, which retrieves all customers
+   from `CustomerList`.
+6. The command iterates over every `Customer`, calling `getName()` on each one. If the name
+   contains the keyword (case-insensitive), the customer is added to a `matchingCustomers` list.
+7. After the loop, the result is handled via an `alt` branch:
+    - If `matchingCustomers` is empty, a `"No customers found matching: ..."` message is printed
+      and the command returns early.
+    - Otherwise, the matching customers are printed as a numbered list showing each customer's
+      ID, name, and phone number.
+
+The following sequence diagram shows the full execution flow of the `find-customer` command:
+
+![Sequence diagram showing the execution flow of the Find Customer Command](images/FindCustomerCommandSequence.png)
+
+#### Design Considerations
+
+| Aspect | Choice | Reason |
+|--------|--------|--------|
+| Case-insensitive matching | `toLowerCase()` on both sides | Reduces user friction; staff should not need to remember the exact capitalisation of a customer's name |
+| Partial match via `contains()` | Yes | A keyword like `Ali` usefully returns `Alice`; exact-match would be too restrictive for quick lookups |
+| Search on name only | Name field | Names are the primary lookup key in a pharmacy context; searching across all fields (e.g. phone, address) would produce unintuitive results |
+| Empty keyword handled in `Parser` | `Parser` | Fails fast before a command object is created; throws `PharmaTrackerException` consistent with how other mandatory-argument commands (e.g. `view`, `find`) signal invalid input |
 
 ---
 
@@ -452,18 +639,18 @@ The following sequence diagram shows the full execution flow of the `view-custom
 The `update-customer` command allows pharmacy staff to update one or more fields of an existing customer record.
 Only the fields explicitly provided are changed; all other fields remain unchanged.
 ```
-update-customer INDEX [/n NAME] [/p PHONE] [/a ADDRESS]
+update-customer INDEX [/n NAME] [/p PHONE] [/addr ADDRESS] [/allergy ALLERGY1,ALLERGY2,...]
 ```
 
 #### How it works
 
-1. The user enters `update-customer 1 /n Alice /p 91234567 /a 123 Main St`.
+1. The user enters `update-customer 1 /n Alice /p 91234567 /addr 123 Main St`.
 2. `PharmaTracker.run()` passes the input to `Parser.parse()`.
 3. `Parser.parse()` identifies the command word `update-customer`.
-4. The parser splits the description into the 1-based index and a trailing argument string. It then calls `extractCustomerUpdateFlag()` for each of the `/n`, `/p`, and `/a` flags. Flags that are absent return `null`.
-5. An `UpdateCustomerCommand` is constructed with the index and the three (nullable) field values.
-6. `UpdateCustomerCommand.execute()` validates the index against `CustomerList.size()`. If no flags were supplied (all three are `null`), it prints an error and returns early.
-7. For each non-null field, the corresponding setter (`customer.setName()`, `customer.setPhone()`, `customer.setAddress()`) is called on the retrieved `Customer` object.
+4. The parser splits the description into the 1-based index and a trailing argument string. It then calls `extractCustomerUpdateFlag()` for each of the `/n`, `/p`, and `/addr` flags. Flags that are absent return `null`. If the `/allergy` flag is present, `CustomerParserUtil.extractCustomerAllergies()` parses the comma-separated value into an `ArrayList<String>`; if absent, `null` is passed, leaving the existing allergy list unchanged.
+5. An `UpdateCustomerCommand` is constructed with the index and the four (nullable) field values.
+6. `UpdateCustomerCommand.execute()` validates the index against `CustomerList.size()`. If no flags were supplied (all four are `null`), it prints an error and returns early.
+7. For each non-null field, the corresponding setter (`customer.setName()`, `customer.setPhone()`, `customer.setAddress()`, `customer.setAllergies()`) is called on the retrieved `Customer` object.
 8. `Ui.printUpdatedCustomerMessage(customer)` confirms the update to the user.
 
 The following sequence diagram shows the full execution flow of the `update-customer` command:
@@ -477,6 +664,7 @@ The following sequence diagram shows the full execution flow of the `update-cust
 | `null` for absent flags | Yes | Cleanly distinguishes "not provided" from an empty string; avoids silent overwrites |
 | Partial update vs full replacement | Partial | Users should not have to re-enter unchanged fields |
 | Validation location | `execute()`, not `Parser` | Keeps parser stateless; index validity requires live `CustomerList` size |
+| `/allergy` replaces the full list, not appends | Full replacement | Simpler mental model — staff explicitly state the complete current allergy list rather than tracking incremental adds and removes |
 
 ---
 
@@ -560,7 +748,9 @@ expiring [/days DAYS]
    - If `/days` is **absent**, a default `ExpiringCommand` is constructed using the no-argument
      constructor, which sets the window to `DEFAULT_DAYS` (30).
    - If `/days` is **present**, the parser calls `parseInt()` on the extracted value to obtain the
-     number of days, then constructs `ExpiringCommand(days)` with that value.
+     number of days. If the value is negative, a `PharmaTrackerException` is thrown. Otherwise,
+     `ExpiringCommand(days)` is constructed with that value. A value of `0` is valid and lists
+     only medications expiring exactly today.
 4. `PharmaTracker.run()` calls `ExpiringCommand.execute()`, which calls
    `Inventory.getMedications()` to obtain the full medication list.
 5. The command iterates over every `Medication`. For each one, `getExpiryDate()` is called:
@@ -584,7 +774,7 @@ The following sequence diagram shows the full execution flow of the `expiring` c
 | Skip medications with unparseable expiry | Silent skip | Prevents a single bad record from crashing the entire scan; logged for debugging |
 | Two separate result lists (`expiredMeds`, `expiringMeds`) | Yes | Allows the `Ui` to present expired and soon-to-expire items in clearly labelled sections, giving staff immediately actionable information |
 | Display delegated to `Ui.showExpiringMedications()` | `Ui` | Consistent with SRP; the command handles filtering logic only and hands display responsibility to `Ui` |
-
+| Zero-days window accepted | `days >= 0` | `expiring /days 0` is a valid query meaning "expiring today"; the UG specifies DAYS must be a non-negative integer, so 0 is explicitly permitted |
 ---
 
 ### Label Feature
@@ -619,6 +809,151 @@ The following sequence diagram shows the full execution flow of the `label` comm
 | Tag line omitted when empty | Yes | A blank tag line on a physical label looks unprofessional and adds no information |
 | Two-stage guard (empty inventory, then out-of-range) | Yes | Produces a clearer error message; avoids an `IndexOutOfBoundsException` when the list is empty |
 | Direct `System.out` for label body | `System.out` in command | The label block is self-contained formatting; moving it to `Ui` would offer no architectural benefit for a single-command output |
+
+---
+
+### Daily Dispense Log Feature
+
+The `dispenselog` command displays a summary of all medications dispensed on a given date.
+Every time a `dispense` command succeeds, a `DispenseRecord` is automatically appended to
+the `DispenseLog` held inside `Inventory`. The log is persisted to `data/dispense_log.txt`
+across sessions.
+
+```
+dispenselog [/date YYYY-MM-DD]
+```
+
+#### How it works
+
+1. **Recording (happens on every successful `dispense`):**
+   - After `DispenseCommand.performDispense()` reduces the stock, a `DispenseRecord` is
+     constructed with the current `LocalDate`, `LocalTime`, medication name, dosage,
+     quantity dispensed, and the linked customer's name (empty string if none).
+   - The record is appended to `inventory.getDispenseLog()` via `DispenseLog.addRecord()`.
+   - `PharmaTracker.run()` then calls `Storage.saveDispenseLog()`, which serialises every
+     record in the log to `data/dispense_log.txt` (one pipe-delimited line per record).
+
+2. **Viewing (`dispenselog` command):**
+   1. The user enters `dispenselog` (today) or `dispenselog /date 2026-04-09` (specific date).
+   2. `PharmaTracker.run()` passes the input to `Parser.parse()`.
+   3. `Parser.parse()` identifies the command word `dispenselog`:
+      - If no argument is given, a `DispenseSummaryCommand()` is constructed (defaults to `LocalDate.now()`).
+      - If `/date YYYY-MM-DD` is present, `LocalDate.parse(dateStr)` is called and the result
+        is passed to `DispenseSummaryCommand(date)`.
+   4. `PharmaTracker.run()` calls `DispenseSummaryCommand.execute()`, which calls
+      `inventory.getDispenseLog().getRecordsByDate(date)` to filter records.
+   5. The filtered list (and the target date) are passed to `Ui.printDispenseSummary()`,
+      which prints each record with a 1-based index, timestamp, medication name, dosage,
+      quantity, and patient name (if any), plus a totals line at the bottom.
+
+3. **Loading on startup:**
+   - `PharmaTracker()` calls `Storage.loadDispenseLog()`, which reads `data/dispense_log.txt`
+     line-by-line using `DispenseRecord.fromStorageString()` and reconstructs a `DispenseLog`.
+   - The loaded log is installed into `Inventory` via `inventory.setDispenseLog(log)`.
+
+#### Class overview
+
+| Class | Role |
+|---|---|
+| `DispenseRecord` | Immutable value object for one dispense event (date, time, med name, dosage, qty, patient) |
+| `DispenseLog` | Wrapper around `ArrayList<DispenseRecord>`; provides `getRecordsByDate()` for filtering |
+| `DispenseSummaryCommand` | Command class; retrieves filtered records and delegates display to `Ui` |
+| `Inventory` | Holds the `DispenseLog` field; exposes `getDispenseLog()` / `setDispenseLog()` |
+| `Storage` | `saveDispenseLog()` / `loadDispenseLog()` for file persistence |
+| `Ui` | `printDispenseSummary(date, records)` for formatted console output |
+
+#### Design Considerations
+
+| Aspect | Choice | Reason |
+|--------|--------|---------|
+| Log stored inside `Inventory` | `Inventory` field | `Inventory` is already the single source of truth for all medication-related data; avoids passing a separate `DispenseLog` object through every command's `execute()` signature |
+| Append only `DispenseRecord` after success | Post-`performDispense()` hook | Ensures only verified dispense events are recorded; a rejected dispense (invalid index, insufficient stock) produces no record |
+| Persistence in a separate file (`dispense_log.txt`) | Separate file | Decouples the fast-changing log from the slower-changing inventory snapshot; makes it easy to archive or clear logs independently |
+| `DispenseRecord.fromStorageString()` returns `null` on error | Null return, not exception | Lets `loadDispenseLog()` skip corrupted lines with a warning rather than aborting the entire load |
+| Date filter via `Stream.filter()` in `DispenseLog` | Stream | Concise and easy to extend (e.g. date-range queries) without changing the storage format |
+| Default to today in `DispenseSummaryCommand()` | `LocalDate.now()` | Most common use-case; staff checking end-of-day totals should not need to type a date |
+
+The following sequence diagrams show the two flows of the dispense log feature.
+
+**Recording flow** — how a `dispense` command writes to the log and saves it:
+
+![Sequence diagram showing the recording flow within the Dispense Command](images/DispenseCommandSequence.png)
+
+**Viewing flow** — how `dispenselog` loads, filters, and displays records:
+
+![Sequence diagram showing the execution flow of the Dispense Log Command](images/DispenseLogSequence.png)
+
+---
+
+### User Authentication Feature
+
+PharmaTracker includes account-based access control so users must authenticate before executing
+most commands.
+
+```
+register USERNAME /p PASSWORD
+login USERNAME /p PASSWORD
+logout
+```
+
+#### How it works
+
+1. On startup, `PharmaTracker()` loads persisted users and previous session state from `Storage`.
+2. `AuthService` is initialized and registered in `AppServices` for command access.
+3. During command loop execution, `PharmaTracker.run()` checks:
+   - If `command.requiresAuthentication()` is `true` and there is no active session,
+     execution is blocked with an authentication-required message.
+4. `RegisterCommand` and `LoginCommand` parse `USERNAME /p PASSWORD` and call
+   `AuthService.register()` / `AuthService.login()`.
+5. `LogoutCommand` clears the active session via `AuthService.logout()`.
+6. After each command cycle, users and session are persisted with
+   `storage.saveUsers(...)` and `storage.saveSession(...)`.
+
+#### Design Considerations
+
+| Aspect | Choice | Reason |
+|--------|--------|--------|
+| Auth enforcement point | `PharmaTracker.run()` gate using `requiresAuthentication()` | Centralized enforcement avoids duplicated checks in every command class |
+| Default command auth policy | `Command.requiresAuthentication()` returns `true` | Secure-by-default; only selected commands override to allow unauthenticated usage |
+| Session persistence | Save current username after each command | Supports session restoration and avoids forcing login after every restart |
+
+---
+
+### Auto Restock Alerts Feature
+
+The system automatically monitors inventory stock levels against per-medication thresholds and
+surfaces actionable restock alerts.
+
+```
+set-threshold INDEX /threshold NUMBER
+alerts
+ack-alert ALERT_INDEX
+alert-history
+```
+
+#### How it works
+
+1. Every medication has `minimumStockThreshold`, initialized to a default value.
+2. Users can override it with `SetThresholdCommand` using
+   `set-threshold INDEX /threshold NUMBER`.
+3. `PharmaTracker.run()` calls `restockAlertService.evaluateInventory(inventory)`:
+   - On startup.
+   - After every command except `logout`.
+4. `RestockAlertService` compares each medication's quantity against threshold:
+   - If `quantity < threshold`, an active alert is created/updated.
+   - If stock recovers above threshold, existing active alert is auto-resolved.
+5. `alerts` prints currently active alerts.
+6. `ack-alert ALERT_INDEX` acknowledges one active alert by display index.
+7. `alert-history` shows full persisted alert history.
+8. Alert history is saved via `storage.saveAlertHistory(...)` each cycle.
+
+#### Design Considerations
+
+| Aspect | Choice | Reason |
+|--------|--------|--------|
+| Per-medication threshold | Stored on `Medication` | Flexible and realistic; different medications can have different reorder points |
+| Active + history model | Active map plus append-only history list | Enables operational view (`alerts`) and audit trail (`alert-history`) |
+| Automatic evaluation in main loop | Re-evaluate after command execution | Keeps alerts up-to-date without requiring users to trigger a separate scan command |
 
 ---
 
@@ -678,24 +1013,116 @@ Fast, lightweight medication tracking without needing a database or internet con
 | v2.0    | pharmacist          | link a dispense event to a customer    | maintain each customer's medication history        |
 | v2.0    | pharmacist          | update a customer's details            | keep customer records current and accurate         |
 | v2.0    | pharmacist          | check which medications are low stock  | reorder before supplies run out                    |
+| v2.0.1    | pharmacist          | view a daily dispense log              | review or audit all dispensing events for any date |
+| v2.1    | pharmacist          | register and login                     | protect sensitive inventory and customer workflows |
+| v2.1    | pharmacist          | configure restock thresholds and review alerts | proactively restock medications before stockouts |
 
 ## Non-Functional Requirements
 
-{Give non-functional requirements}
+1. **Platform compatibility:** The application must run on any mainstream operating system
+   (Windows, macOS, Linux) that has Java 17 or above installed.
+
+2. **No external dependencies:** The application must function without an internet connection
+   and must not require any third-party libraries, databases, or external services beyond the
+   Java Standard Library.
+
+3. **Data persistence:** All data (medications, customers, dispense logs, user accounts, and
+   alert history) must be automatically saved to local text files after every command and
+   restored correctly on the next startup, with no manual save step required from the user.
+
+4. **Usability:** A pharmacist or pharmacy technician who is comfortable with CLI applications
+   should be able to learn the full command set within 30 minutes of using the `help` command
+   and the User Guide.
+
+5. **Data integrity:** The application must not corrupt existing records when a command fails
+   (e.g. invalid index, insufficient stock, allergy conflict). Any failed command must leave
+   all data in its pre-command state.
+
+6. **Security:** User passwords must not be stored in plaintext. All sensitive operations
+   (inventory management, customer records, dispensing) must require an authenticated session.
+
+7. **Recoverability:** If a single line in any data file is malformed or corrupted, the
+   application must skip that entry and continue loading the rest of the file, rather than
+   crashing or refusing to start.
+
+8. **Auditability:** Every successful dispense event must be automatically logged with a
+   timestamp, medication name, dosage, quantity, and patient name (if linked), and this log
+   must persist across sessions.
+
+9. **Maintainability:** The codebase must follow the coding standard enforced by the project's
+    Checkstyle configuration, and all new commands must follow the existing Command pattern so
+    that features can be added without modifying the core execution loop.
 
 ## Glossary
 
-* *glossary item* - Definition
+* **Allergen** - A substance that a customer has a recorded sensitivity to. Stored in lowercase
+  as part of a customer's profile and checked against medication names during every dispense
+  operation that is linked to a customer.
+
+* **Authentication** - The process of verifying a user's identity via a registered username and
+  password before granting access to pharmacy operations. Managed by `AuthService`.
+
+* **CLI (Command-Line Interface)** - The text-based interface through which users interact with
+  PharmaTracker by typing commands and reading printed output in a terminal window.
+
+* **Command** - An action entered by the user (e.g. `add`, `dispense`, `view-customer`). Each
+  command is represented internally as a subclass of the abstract `Command` class and executed
+  via its `execute(Inventory, Ui, CustomerList)` method.
+
+* **Customer** - A registered patient or pharmacy client whose profile includes a unique ID,
+  name, phone number, optional address, known allergies, and a dispensing history. Stored in
+  `data/customers.txt`.
+
+* **Customer ID** - A user-defined unique alphanumeric identifier for a customer (e.g. `C001`).
+  Must be unique across all registered customers; duplicate IDs are rejected at registration.
+
+* **Dispense** - The act of issuing a quantity of medication from the inventory, reducing its
+  stock count. Can optionally be linked to a customer to record the event in their dispensing
+  history.
+
+* **Dispense Log** - A time-stamped record of all successful dispense events for a given date.
+  Persisted to `data/dispense_log.txt` and viewable via the `dispenselog` command.
+
+* **Dispensing History** - A per-customer list of medication records showing what has been
+  dispensed to that customer over time. Each entry contains the medication name, dosage, and
+  quantity dispensed.
+
+* **Dosage** - The strength or concentration of a medication (e.g. `500mg`, `15mg/5ml`).
+  Stored as a free-text string alongside the medication name.
+
+* **Dosage Form** - The physical presentation of a medication (e.g. `Tablet`, `Capsule`,
+  `Syrup`, `Ointment`). An optional field on a medication record.
+
+* **Expiry Date** - The date after which a medication is considered expired and cannot be
+  dispensed. Accepted in `DD/MM/YYYY`, `DD-MM-YYYY`, or `YYYY-MM-DD` format at input; stored
+  internally as `YYYY-MM-DD`.
+
+* **Flag** - A prefix token used in command arguments to identify a specific parameter
+  (e.g. `/n` for name, `/q` for quantity, `/allergy` for allergens). Flags are parsed by
+  `PharmaTrackerParser` and its associated utility classes.
+
+* **Index** - The 1-based position of a medication or customer as displayed in a list command.
+  Used to target a specific record for operations such as `view`, `delete`, `dispense`, and
+  `update`.
+
+* **Inventory** - The in-memory collection of all `Medication` records currently tracked by
+  the system. Persisted to `data/pharmatracker.txt`.
+
+* **Low Stock** - A state where a medication's current quantity falls strictly below its
+  configured minimum stock threshold. Triggers a `[LOW STOCK]` flag in `list` and an automatic
+  alert via `RestockAlertService`.
+
+* **Medication** - A drug record in
 
 ## Instructions for manual testing
 
-{Give instructions on how to do a manual product testing e.g., how to load sample data to be used for testing}
-
 ### Launching the application
 
-1. Open a terminal in the project root directory.
-2. Run `./gradlew run` (Linux/macOS) or `.\gradlew run` (Windows).
-3. The welcome banner and `Enter command:` prompt should appear.
+1. Ensure Java 17 or above is installed on your computer.
+2. Download the latest `pharmatracker.jar` from the releases page.
+3. Open a terminal in the folder containing the jar file.
+4. Run `java -jar pharmatracker.jar` to start the application.
+5. The welcome banner and `Enter command:` prompt should appear.
 
 ### Adding a medication
 
@@ -706,7 +1133,7 @@ Fast, lightweight medication tracking without needing a database or internet con
 ### Listing medications
 
 1. Enter: `list`
-2. **Expected:** All medications displayed with index, name, dosage, quantity, expiry, and tag. Items with quantity ≤ 10 show `[LOW STOCK]`.
+2. **Expected:** All medications displayed with index, name, dosage, quantity, expiry, and tag. Items with quantity < 20 show `[LOW STOCK]`.
 
 ### Finding a medication
 
@@ -728,17 +1155,17 @@ Fast, lightweight medication tracking without needing a database or internet con
 
 ### Dispensing with customer linking
 
-1. Enter: `dispense 1 q/20 c/1`
+1. Enter: `dispense 1 /q 20 /c 1`
 2. **Expected:** Stock reduced by 20, confirmation includes customer ID and name.
-3. Without customer: `dispense 1 q/20` → behaves as original, no customer info in output.
-4. Invalid customer index: `dispense 1 q/20 c/99` → error message for out-of-bounds customer index.
+3. Without customer: `dispense 1 /q 20` → behaves as original, no customer info in output.
+4. Invalid customer index: `dispense 1 /q 20 /c 99` → error message for out-of-bounds customer index.
 
 ### Updating a customer
 
 1. Enter: `update-customer 1 /n Alice Tan /p 91234567`
 2. **Expected:** Confirmation showing updated customer details; address is unchanged.
-3. All fields: `update-customer 1 /n Alice Tan /p 91234567 /a 10 Orchard Road` → all three fields updated.
-4. No flags supplied: `update-customer 1` → error `No fields provided to update! Use /n, /p, or /a flags.`
+3. All fields: `update-customer 1 /n Alice Tan /p 91234567 /addr 10 Orchard Road` → all three fields updated.
+4. No flags supplied: `update-customer 1` → error `No fields provided to update! Use /n, /p, /addr, or /allergy flags.`
 5. Invalid index: `update-customer 99 /n Alice` → error message for out-of-bounds index.
 
 ### Checking low stock
@@ -748,3 +1175,12 @@ Fast, lightweight medication tracking without needing a database or internet con
 3. Custom threshold: `lowstock /threshold 10` → lists medications with quantity below 10.
 4. No low-stock items: a message stating all medications are sufficiently stocked is shown.
 5. Invalid threshold: `lowstock /threshold abc` → error message for non-integer threshold.
+
+### Viewing the daily dispense log
+
+1. Dispense some medications first: `dispense 1 /q 5` and `dispense 2 /q 3`.
+2. Enter: `dispenselog`
+3. **Expected:** A log showing today's date, one entry per dispense event with time, medication name, dosage, quantity, and patient name (if linked). A totals line at the bottom shows event count and total units.
+4. With a patient: `dispense 1 /q 2 /c 1` then `dispenselog` → the patient's name appears on that entry.
+5. Specific past date: `dispenselog /date 2026-01-01` → `No dispense events recorded for 2026-01-01.` (assuming no events on that date).
+6. Invalid date format: `dispenselog /date 09-04-2026` → error message asking for `YYYY-MM-DD` format.

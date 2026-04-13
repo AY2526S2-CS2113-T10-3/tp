@@ -25,7 +25,7 @@ PharmaTracker is a command-line application for pharmacy staff to manage medicat
 #### 2. Update Customer Command (`updatecustomer`)
 
 - **What it does:** Updates one or more fields (name, phone number, address) of an existing customer record. Only the fields explicitly provided are changed; all others remain unchanged.
-- **Format:** `updatecustomer INDEX [/n NAME] [/p PHONE] [/a ADDRESS]`
+- **Format:** `updatecustomer INDEX [/n NAME] [/p PHONE] [/addr ADDRESS]`
 
 #### 3. Label Command (`label`) — Earlier Contribution
 
@@ -39,6 +39,22 @@ PharmaTracker is a command-line application for pharmacy staff to manage medicat
 #### 5. Sort Command Enhancements
 
 - Implemented `Sort` command
+
+
+#### 6. Daily Dispense Log (`dispenselog`)
+
+- **What it does:** Records every dispense event (medication name, dosage, quantity, time, and optional patient name) and displays a formatted daily summary on demand. Defaults to today's date; an optional `/date YYYY-MM-DD` flag lets staff view logs for any past date.
+- **Format:** `dispenselog [/date YYYY-MM-DD]`
+- **Justification:** Pharmacies are often required to maintain a daily dispensing record for audit and compliance purposes. This feature auto-captures each dispense in the background and persists the log to `data/dispense_log.txt` across sessions so nothing is lost on restart.
+- **Files added/modified:**
+  - `DispenseRecord.java` — data class for a single dispense event
+  - `DispenseLog.java` — collection of records with date-based filtering
+  - `DispenseSummaryCommand.java` — command implementation
+  - `Inventory.java` — added `DispenseLog` field
+  - `DispenseCommand.java` — appends a record after each successful dispense
+  - `Storage.java` — `saveDispenseLog()` / `loadDispenseLog()` for persistence
+  - `PharmaTrackerParser.java` — added `dispenselog` command case
+  - `Ui.java` — added `printDispenseSummary()` and updated help menu
 
 ---
 
@@ -91,19 +107,48 @@ Total: 2 medication(s) low on stock.
 
 Updates one or more fields of an existing customer record. Only the fields you provide are changed; all others remain unchanged.
 
-**Format:** `updatecustomer INDEX [/n NAME] [/p PHONE] [/a ADDRESS]`
+**Format:** `updatecustomer INDEX [/n NAME] [/p PHONE] [/addr ADDRESS]`
 
-- At least one of `/n`, `/p`, or `/a` must be provided.
+- At least one of `/n`, `/p`, or `/addr` must be provided.
 - `INDEX` is the 1-based position as shown in `listcustomers`.
 
 **Examples:**
 - `updatecustomer 1 /n Alice Tan` — updates name only
-- `updatecustomer 2 /p 81234567 /a 99 Clementi Ave` — updates phone and address
-- `updatecustomer 1 /n Bob /p 98765432 /a 5 Bukit Timah Road` — updates all three fields
+- `updatecustomer 2 /p 81234567 /addr 99 Clementi Ave` — updates phone and address
+- `updatecustomer 1 /n Bob /p 98765432 /addr 5 Bukit Timah Road` — updates all three fields
 
 **Expected output:**
 ```
 -------------------------------
 Customer updated: [C001] Alice Tan | Phone: 81234567 | Address: 99 Clementi Ave
+-------------------------------
+```
+
+---
+
+### View Daily Dispense Log: `dispenselog`
+
+Displays a summary of all medications dispensed on a given date. Defaults to today if no date is provided.
+
+**Format:** `dispenselog [/date YYYY-MM-DD]`
+
+- Each entry shows the time, medication name, dosage, quantity dispensed, and patient name (if linked).
+- A total unit count and event count are shown at the bottom.
+- The log persists across sessions in `data/dispense_log.txt`.
+
+**Examples:**
+- `dispenselog`
+- `dispenselog /date 2026-04-09`
+
+**Expected output (example):**
+```
+-------------------------------
+Dispense Log for 2026-04-09
+-------------------------------
+1. 09:15 | Paracetamol | Dosage: 500mg | Qty: 2 | Patient: Alice Tan
+2. 11:42 | Ibuprofen | Dosage: 200mg | Qty: 1
+3. 14:30 | Amoxicillin | Dosage: 250mg | Qty: 3 | Patient: Bob Lee
+-------------------------------
+Total: 3 dispense event(s), 6 unit(s) dispensed.
 -------------------------------
 ```

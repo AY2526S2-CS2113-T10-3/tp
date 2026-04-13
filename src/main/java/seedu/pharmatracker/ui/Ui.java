@@ -1,10 +1,14 @@
 package seedu.pharmatracker.ui;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Scanner;
 import java.util.ArrayList;
 
+import seedu.pharmatracker.alert.RestockAlert;
 import seedu.pharmatracker.customer.Customer;
 import seedu.pharmatracker.customer.CustomerList;
+import seedu.pharmatracker.data.DispenseRecord;
 import seedu.pharmatracker.data.Inventory;
 import seedu.pharmatracker.data.Medication;
 
@@ -226,6 +230,8 @@ public class Ui {
         System.out.printf("%-20s %s%n", "Phone:", customer.getPhone());
         System.out.printf("%-20s %s%n", "Address:",
                 customer.getAddress().isEmpty() ? "N/A" : customer.getAddress());
+        System.out.printf("%-20s %s%n", "Allergies:",
+                customer.getAllergies().isEmpty() ? "None" : String.join(", ", customer.getAllergies()));
         System.out.println("----------------------------------------");
         System.out.println("DISPENSING HISTORY");
         System.out.println("----------------------------------------");
@@ -251,8 +257,10 @@ public class Ui {
      */
     public void showExpiringMedications(ArrayList<Medication> expiredMeds,
                                         ArrayList<Medication> expiringMeds, int days) {
+        System.out.println(DIVIDER);
         if (expiredMeds.isEmpty() && expiringMeds.isEmpty()) {
             System.out.println("No expired or expiring medications found.");
+            System.out.println(DIVIDER);
             return;
         }
 
@@ -272,6 +280,7 @@ public class Ui {
             }
             System.out.println("Total: " + expiringMeds.size() + " medication(s) expiring soon.");
         }
+        System.out.println(DIVIDER);
     }
 
     /**
@@ -296,6 +305,95 @@ public class Ui {
                     + " | Expiry: " + med.getExpiryDate());
         }
         System.out.println("Total: " + lowStockMeds.size() + " medication(s) low on stock.");
+        System.out.println(DIVIDER);
+    }
+
+    /**
+     * Prints active automatic restock alerts.
+     *
+     * @param activeAlerts Active, unacknowledged alerts.
+     */
+    public void printActiveAlerts(ArrayList<RestockAlert> activeAlerts) {
+        System.out.println(DIVIDER);
+        if (activeAlerts.isEmpty()) {
+            System.out.println("No active restock alerts.");
+            System.out.println(DIVIDER);
+            return;
+        }
+
+        System.out.println("Active Restock Alerts:");
+        for (int i = 0; i < activeAlerts.size(); i++) {
+            RestockAlert alert = activeAlerts.get(i);
+            System.out.println((i + 1) + ". " + alert.getMedicationName()
+                    + " | Current Stock: " + alert.getCurrentStock()
+                    + " | Threshold: " + alert.getThreshold()
+                    + " | Created: " + alert.getCreatedAtString());
+        }
+        System.out.println("Use 'ack-alert ALERT_INDEX' to acknowledge an alert.");
+        System.out.println(DIVIDER);
+    }
+
+    /**
+     * Prints full restock alert history including acknowledged and auto-resolved alerts.
+     *
+     * @param history Full alert history list.
+     */
+    public void printAlertHistory(ArrayList<RestockAlert> history) {
+        System.out.println(DIVIDER);
+        if (history.isEmpty()) {
+            System.out.println("No restock alert history found.");
+            System.out.println(DIVIDER);
+            return;
+        }
+
+        System.out.println("Restock Alert History:");
+        for (int i = 0; i < history.size(); i++) {
+            RestockAlert alert = history.get(i);
+            String status = alert.isAcknowledged()
+                    ? "Acknowledged"
+                    : "Active";
+            System.out.println((i + 1) + ". " + alert.getMedicationName()
+                    + " | Stock: " + alert.getCurrentStock()
+                    + " | Threshold: " + alert.getThreshold()
+                    + " | Status: " + status
+                    + " | Created: " + alert.getCreatedAtString());
+        }
+        System.out.println(DIVIDER);
+    }
+
+    /**
+     * Prints a concise summary for newly detected active alerts.
+     *
+     * @param activeAlerts Active alerts to summarize.
+     */
+    public void printAutoRestockAlertSummary(ArrayList<RestockAlert> activeAlerts) {
+        if (activeAlerts.isEmpty()) {
+            return;
+        }
+
+        System.out.println(DIVIDER);
+        System.out.println("AUTO RESTOCK ALERT: " + activeAlerts.size() + " medication(s) below threshold.");
+        for (RestockAlert alert : activeAlerts) {
+            System.out.println("- " + alert.getMedicationName() + " | Stock: " + alert.getCurrentStock()
+                    + " | Min Threshold: " + alert.getThreshold());
+        }
+        System.out.println("Use 'alerts' to view details or 'ack-alert ALERT_INDEX' to acknowledge.");
+        System.out.println(DIVIDER);
+    }
+
+    /**
+     * Prints an allergy conflict warning when a medication is about to be dispensed
+     * to a customer with a known allergy to that medication.
+     * The dispense operation should be aborted after this message is printed.
+     *
+     * @param customerName The name of the customer with the allergy.
+     * @param allergen     The matched allergen keyword that triggered the warning.
+     */
+    public void printAllergyWarning(String customerName, String allergen) {
+        System.out.println(DIVIDER);
+        System.out.println("WARNING: Allergy conflict detected!");
+        System.out.println("Customer \"" + customerName + "\" has a recorded allergy to \"" + allergen + "\".");
+        System.out.println("Dispense aborted. Please verify with a pharmacist before proceeding.");
         System.out.println(DIVIDER);
     }
 
@@ -332,18 +430,18 @@ public class Ui {
      * @param customerList The list of customers to display.
      */
     public void printCustomerList(CustomerList customerList) {
+        System.out.println(DIVIDER);
         if (customerList.size() == 0) {
             System.out.println("No customers registered yet.");
         } else {
-            System.out.println(DIVIDER);
             System.out.println("PharmaTracker Customers:");
             for (int i = 0; i < customerList.size(); i++) {
                 Customer customer = customerList.getCustomer(i);
                 System.out.println((i + 1) + ". " + customer.toString());
             }
             System.out.println("Total Customers: " + customerList.size() + ".");
-            System.out.println(DIVIDER);
         }
+        System.out.println(DIVIDER);
     }
 
     public void printUpdatedMedicationMessage(Medication med, ArrayList<String> changes) {
@@ -363,7 +461,7 @@ public class Ui {
         System.out.println("--- Medication Commands ---");
         System.out.println(" 1. Add Medication           (add /n NAME /d DOSAGE /q QUANTITY /e EXPIRY /t TAG)");
         System.out.println(" 2. Delete Medication        (delete INDEX)");
-        System.out.println(" 3. Dispense Medication      (dispense INDEX q/QUANTITY [c/CUSTOMER_INDEX])");
+        System.out.println(" 3. Dispense Medication      (dispense INDEX /q QUANTITY [/c CUSTOMER_INDEX])");
         System.out.println(" 4. List Inventory           (list)");
         System.out.println(" 5. Find / Search Medication (find KEYWORD)");
         System.out.println(" 6. View Medication Details  (view INDEX)");
@@ -374,16 +472,50 @@ public class Ui {
         System.out.println("10. Restock Medication       (restock INDEX /q QUANTITY)");
         System.out.println("11. Low Stock Alert          (lowstock | lowstock /threshold NUMBER)");
         System.out.println("12. Expiring Medications     (expiring | expiring /days NUMBER)");
+        System.out.println("13. Set Min Threshold        (set-threshold INDEX /threshold NUMBER)");
+        System.out.println("14. View Active Alerts       (alerts)");
+        System.out.println("15. Acknowledge Alert        (ack-alert ALERT_INDEX)");
+        System.out.println("16. View Alert History       (alert-history)");
+        System.out.println("17. Daily Dispense Log       (dispenselog | dispenselog /date YYYY-MM-DD)");
         System.out.println("--- Customer Commands ---");
-        System.out.println("13. Add Customer             (add-customer /n NAME /p PHONE /a ADDRESS)");
-        System.out.println("14. Delete Customer          (delete-customer INDEX)");
-        System.out.println("15. Update Customer          (update-customer INDEX /n NAME /p PHONE /a ADDRESS)");
-        System.out.println("16. List Customers           (list-customers)");
-        System.out.println("17. Find Customer            (find-customer KEYWORD)");
-        System.out.println("18. View Customer            (view-customer INDEX)");
+        System.out.println("18. Add Customer             (add-customer /n NAME /p PHONE /addr ADDRESS)");
+        System.out.println("19. Delete Customer          (delete-customer INDEX)");
+        System.out.println("20. Update Customer          (update-customer INDEX /n NAME /p PHONE /addr ADDRESS)");
+        System.out.println("21. List Customers           (list-customers)");
+        System.out.println("22. Find Customer            (find-customer KEYWORD)");
+        System.out.println("23. View Customer            (view-customer INDEX)");
+        System.out.println("--- Authentication ---");
+        System.out.println("24. Register                 (register USERNAME /p PASSWORD)");
+        System.out.println("25. Login                    (login USERNAME /p PASSWORD)");
+        System.out.println("26. Logout                   (logout)");
         System.out.println("--- General ---");
-        System.out.println("19. Viewing Help             (help)");
-        System.out.println("20. Exiting the Program      (exit)");
+        System.out.println("27. Viewing Help             (help)");
+        System.out.println("28. Exiting the Program      (exit)");
+    }
+
+    /**
+     * Prints a formatted daily dispense summary for the given date.
+     *
+     * @param date    The date of the summary.
+     * @param records The list of dispense records for that date.
+     */
+    public void printDispenseSummary(LocalDate date, List<DispenseRecord> records) {
+        System.out.println(DIVIDER);
+        System.out.println("Dispense Log for " + date);
+        System.out.println(DIVIDER);
+        if (records.isEmpty()) {
+            System.out.println("No dispense events recorded for " + date + ".");
+        } else {
+            int totalUnits = 0;
+            for (int i = 0; i < records.size(); i++) {
+                System.out.println((i + 1) + ". " + records.get(i));
+                totalUnits += records.get(i).getQuantity();
+            }
+            System.out.println(DIVIDER);
+            System.out.println("Total: " + records.size() + " dispense event(s), "
+                    + totalUnits + " unit(s) dispensed.");
+        }
+        System.out.println(DIVIDER);
     }
 
     /**

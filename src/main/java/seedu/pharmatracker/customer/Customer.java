@@ -12,6 +12,7 @@ public class Customer {
     private String phone;
     private String address; // Optional field
     private ArrayList<String> dispensingHistory;
+    private ArrayList<String> allergies; // Optional field
 
     /**
      * Constructs a Customer with mandatory and optional details.
@@ -29,6 +30,7 @@ public class Customer {
         this.phone = phone;
         this.address = (address == null) ? "" : address;
         this.dispensingHistory = new ArrayList<>();
+        this.allergies = new ArrayList<>();
     }
 
     public String getCustomerId() {
@@ -72,6 +74,68 @@ public class Customer {
         this.dispensingHistory.add(medicationRecord);
     }
 
+    public ArrayList<String> getAllergies() {
+        return allergies;
+    }
+
+    /**
+     * Adds a known allergy to the customer's allergy list.
+     *
+     * @param allergy The allergy keyword to add (e.g. "penicillin").
+     */
+    public void addAllergy(String allergy) {
+        assert allergy != null : "Allergy cannot be null";
+        this.allergies.add(allergy.trim().toLowerCase());
+    }
+
+    /**
+     * Replaces the customer's full allergy list.
+     *
+     * @param allergies New list of allergy strings.
+     */
+    public void setAllergies(ArrayList<String> allergies) {
+        this.allergies = (allergies == null) ? new ArrayList<>() : allergies;
+    }
+
+    /**
+     * Returns true if the medication name contains any of the customer's known allergens
+     * (case-insensitive substring match).
+     *
+     * @param medicationName The name of the medication to check.
+     * @return true if an allergy match is found.
+     */
+    public boolean isAllergicTo(String medicationName) {
+        if (medicationName == null || allergies.isEmpty()) {
+            return false;
+        }
+        String lowerName = medicationName.toLowerCase();
+        for (String allergy : allergies) {
+            if (lowerName.contains(allergy)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns the first allergen that matches the given medication name, or null if none.
+     *
+     * @param medicationName The name of the medication to check.
+     * @return The first matching allergen keyword, or null.
+     */
+    public String getMatchedAllergen(String medicationName) {
+        if (medicationName == null || allergies.isEmpty()) {
+            return null;
+        }
+        String lowerName = medicationName.toLowerCase();
+        for (String allergy : allergies) {
+            if (lowerName.contains(allergy)) {
+                return allergy;
+            }
+        }
+        return null;
+    }
+
     /**
      * Returns a short summary string for use in list and find displays.
      *
@@ -82,6 +146,9 @@ public class Customer {
         String result = "[" + customerId + "] " + name + " | Phone: " + phone;
         if (!address.isEmpty()) {
             result += " | Address: " + address;
+        }
+        if (!allergies.isEmpty()) {
+            result += " | Allergies: " + String.join(", ", allergies);
         }
         return result;
     }

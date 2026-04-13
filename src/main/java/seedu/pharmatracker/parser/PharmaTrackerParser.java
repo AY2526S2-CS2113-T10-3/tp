@@ -2,9 +2,13 @@ package seedu.pharmatracker.parser;
 
 import seedu.pharmatracker.command.AddCommand;
 import seedu.pharmatracker.command.AddCustomerCommand;
+import seedu.pharmatracker.command.AlertHistoryCommand;
+import seedu.pharmatracker.command.AlertsCommand;
+import seedu.pharmatracker.command.AcknowledgeAlertCommand;
 import seedu.pharmatracker.command.Command;
 import seedu.pharmatracker.command.DeleteCommand;
 import seedu.pharmatracker.command.DeleteCustomerCommand;
+import seedu.pharmatracker.command.DispenseSummaryCommand;
 import seedu.pharmatracker.command.ListCommand;
 import seedu.pharmatracker.command.SortCommand;
 import seedu.pharmatracker.command.FindCommand;
@@ -15,13 +19,19 @@ import seedu.pharmatracker.command.HelpCommand;
 import seedu.pharmatracker.command.ExitCommand;
 import seedu.pharmatracker.command.LabelCommand;
 import seedu.pharmatracker.command.ExpiringCommand;
+import seedu.pharmatracker.command.LoginCommand;
 import seedu.pharmatracker.command.LowStockCommand;
+import seedu.pharmatracker.command.LogoutCommand;
+import seedu.pharmatracker.command.RegisterCommand;
+import seedu.pharmatracker.command.SetThresholdCommand;
 import seedu.pharmatracker.command.UpdateCustomerCommand;
 import seedu.pharmatracker.command.FindCustomerCommand;
 import seedu.pharmatracker.command.ViewCustomerCommand;
 import seedu.pharmatracker.command.RestockCommand;
 import seedu.pharmatracker.exceptions.PharmaTrackerException;
 import seedu.pharmatracker.command.ListCustomersCommand;
+
+import java.time.LocalDate;
 
 /**
  * Parses user input into executable commands.
@@ -53,22 +63,19 @@ public class PharmaTrackerParser {
 
         case FindCommand.COMMAND_WORD:
             if (description.isEmpty()) {
-                System.out.println("Please provide a keyword to search for.");
-                break;
+                throw new PharmaTrackerException("Please provide a keyword to search for.");
             }
             return new FindCommand(description);
 
         case ViewCommand.COMMAND_WORD:
             if (description.isEmpty()) {
-                System.out.println("Please provide an index to view.");
-                break;
+                throw new PharmaTrackerException("Please provide an index to view.");
             }
             try {
                 int index = Integer.parseInt(description.trim());
                 return new ViewCommand(index);
             } catch (NumberFormatException e) {
-                System.out.println("Invalid index. Please enter a valid number.");
-                break;
+                throw new PharmaTrackerException("Invalid index. Please enter a valid number.");
             }
 
         case DispenseCommand.COMMAND_WORD:
@@ -77,19 +84,32 @@ public class PharmaTrackerParser {
                 break;
             }
             try {
-                String[] parts = description.trim().split("q/");
+                String[] parts = description.trim().split("\\s+", 2);
                 int dispenseIndex = Integer.parseInt(parts[0].trim());
-                String qPart = parts[1];
-                if (qPart.contains("c/")) {
-                    String[] qAndC = qPart.split("c/");
-                    int dispenseQuantity = Integer.parseInt(qAndC[0].trim());
-                    int dispenseCustomer = Integer.parseInt(qAndC[1].trim());
-                    return new DispenseCommand(dispenseIndex, dispenseQuantity, dispenseCustomer);
+                String args = (parts.length > 1) ? parts[1] : "";
+                
+                if (!args.contains("/q")) {
+                    System.out.println("Invalid format. Use: dispense INDEX /q QUANTITY [/c CUSTOMER_INDEX]");
+                    break;
                 }
-                int dispenseQuantity = Integer.parseInt(qPart.trim());
+                
+                String quantityStr = extractFlagValue(args, "/q", "/c");
+                if (quantityStr == null || quantityStr.isEmpty()) {
+                    System.out.println("Invalid format. Use: dispense INDEX /q QUANTITY [/c CUSTOMER_INDEX]");
+                    break;
+                }
+                int dispenseQuantity = Integer.parseInt(quantityStr.trim());
+                
+                if (args.contains("/c")) {
+                    String customerStr = extractFlagValue(args, "/c", null);
+                    if (customerStr != null && !customerStr.isEmpty()) {
+                        int dispenseCustomer = Integer.parseInt(customerStr.trim());
+                        return new DispenseCommand(dispenseIndex, dispenseQuantity, dispenseCustomer);
+                    }
+                }
                 return new DispenseCommand(dispenseIndex, dispenseQuantity);
             } catch (Exception e) {
-                System.out.println("Invalid format. Use: dispense INDEX q/QUANTITY [c/CUSTOMER_INDEX]");
+                System.out.println("Invalid format. Use: dispense INDEX /q QUANTITY [/c CUSTOMER_INDEX]");
                 break;
             }
 
@@ -118,18 +138,15 @@ public class PharmaTrackerParser {
                     String daysStr = description.substring(
                             description.indexOf("/days") + "/days".length()).trim();
                     int days = Integer.parseInt(daysStr);
-                    if (days <= 0) {
-                        System.out.println("Number of days must be a positive integer.");
-                        return null;
+                    if (days < 0) {
+                        throw new PharmaTrackerException("Number of days must be a non-negative integer.");
                     }
                     return new ExpiringCommand(days);
                 } catch (NumberFormatException e) {
-                    System.out.println("Invalid number of days. Usage: expiring /days NUMBER");
-                    return null;
+                    throw new PharmaTrackerException("Invalid number of days. Usage: expiring /days NUMBER");
                 }
             }
-            System.out.println("Invalid format. Usage: expiring or expiring /days NUMBER");
-            return null;
+            throw new PharmaTrackerException("Invalid format. Usage: expiring or expiring /days NUMBER");
 
         case UpdateCommand.COMMAND_WORD:
             return new UpdateCommandParser().parse(description);
@@ -143,7 +160,8 @@ public class PharmaTrackerParser {
         case UpdateCustomerCommand.COMMAND_WORD:
             if (description.isEmpty()) {
                 throw new PharmaTrackerException(
-                        "Invalid format! Use: updatecustomer INDEX [/n NAME] [/p PHONE] [/a ADDRESS]");
+                        "Invalid format! Use: updatecustomer INDEX [/n NAME] [/p PHONE] [/addr ADDRESS]"
+                                + "[/allergy ALLERGY1,ALLERGY2,...]");
             }
             try {
                 String[] ucParts = description.trim().split("\\s+", 2);
@@ -151,8 +169,17 @@ public class PharmaTrackerParser {
                 String ucArgs = (ucParts.length > 1) ? ucParts[1] : "";
                 String ucName = CustomerParserUtil.extractCustomerUpdateFlag(ucArgs, "/n");
                 String ucPhone = CustomerParserUtil.extractCustomerUpdateFlag(ucArgs, "/p");
-                String ucAddress = CustomerParserUtil.extractCustomerUpdateFlag(ucArgs, "/a");
-                return new UpdateCustomerCommand(ucIndex, ucName, ucPhone, ucAddress);
+                if (ucPhone != null && !(ucPhone.startsWith("8") || ucPhone.startsWith("9"))) {
+                    throw new PharmaTrackerException("Customer phone must be a valid Singapore number!\n"
+                            + "Please ensure the number starts with either '8' or '9'");
+                }
+                String ucAddress = CustomerParserUtil.extractCustomerUpdateFlag(ucArgs,
+                        CustomerParserUtil.FLAG_ADDRESS);
+                java.util.ArrayList<String> ucAllergies = null;
+                if (ucArgs.contains(CustomerParserUtil.FLAG_ALLERGY)) {
+                    ucAllergies = CustomerParserUtil.extractCustomerAllergies(ucArgs);
+                }
+                return new UpdateCustomerCommand(ucIndex, ucName, ucPhone, ucAddress, ucAllergies);
             } catch (NumberFormatException e) {
                 throw new PharmaTrackerException(
                         "Invalid index! The first argument must be a valid number.");
@@ -160,7 +187,7 @@ public class PharmaTrackerParser {
 
         case FindCustomerCommand.COMMAND_WORD:
             if (description.trim().isEmpty()) {
-                System.out.println("Please provide a name to search for. Usage: find-customer <name>");
+                throw new PharmaTrackerException("Please provide a name to search for. Usage: find-customer <name>");
             }
             return new FindCustomerCommand(description.trim());
 
@@ -169,8 +196,7 @@ public class PharmaTrackerParser {
                 int index = Integer.parseInt(description.trim());
                 return new ViewCustomerCommand(index);
             } catch (NumberFormatException e) {
-                System.out.println("Invalid format. Usage: view-customer INDEX");
-                return null;
+                throw new PharmaTrackerException("Invalid format. Usage: view-customer INDEX");
             }
 
         case RestockCommand.COMMAND_WORD:
@@ -190,6 +216,23 @@ public class PharmaTrackerParser {
 
         case HelpCommand.COMMAND_WORD:
             return new HelpCommand();
+
+        case DispenseSummaryCommand.COMMAND_WORD:
+            if (description.isEmpty()) {
+                return new DispenseSummaryCommand();
+            }
+            if (description.startsWith("/date")) {
+                String dateStr = description.substring("/date".length()).trim();
+                try {
+                    LocalDate targetDate = LocalDate.parse(dateStr);
+                    return new DispenseSummaryCommand(targetDate);
+                } catch (Exception e) {
+                    System.out.println("Invalid date format. Use: dispenselog /date YYYY-MM-DD");
+                    return null;
+                }
+            }
+            System.out.println("Invalid format. Use: dispenselog or dispenselog /date YYYY-MM-DD");
+            return null;
 
         case LowStockCommand.COMMAND_WORD:
             if (!description.isEmpty()) {
@@ -220,11 +263,107 @@ public class PharmaTrackerParser {
         case ListCustomersCommand.COMMAND_WORD:
             return new ListCustomersCommand();
 
+        case RegisterCommand.COMMAND_WORD:
+            if (description.isEmpty()) {
+                throw new PharmaTrackerException("Invalid format! Use: register USERNAME /p PASSWORD");
+            }
+            return parseRegisterOrLogin(description, true);
+
+        case LoginCommand.COMMAND_WORD:
+            if (description.isEmpty()) {
+                throw new PharmaTrackerException("Invalid format! Use: login USERNAME /p PASSWORD");
+            }
+            return parseRegisterOrLogin(description, false);
+
+        case LogoutCommand.COMMAND_WORD:
+            return new LogoutCommand();
+
+        case SetThresholdCommand.COMMAND_WORD:
+            return parseSetThreshold(description);
+
+        case AlertsCommand.COMMAND_WORD:
+            return new AlertsCommand();
+
+        case AcknowledgeAlertCommand.COMMAND_WORD:
+            return parseAcknowledgeAlert(description);
+
+        case AlertHistoryCommand.COMMAND_WORD:
+            return new AlertHistoryCommand();
+
         default:
             throw new PharmaTrackerException("Unknown command! " +
                     "Please type 'help' to see the list of available commands.");
         }
 
         return null;
+    }
+
+    private static Command parseRegisterOrLogin(String description, boolean isRegister)
+            throws PharmaTrackerException {
+        String[] parts = description.trim().split("/p", 2);
+        if (parts.length != 2) {
+            throw new PharmaTrackerException("Invalid format! Use: "
+                    + (isRegister ? "register" : "login") + " USERNAME /p PASSWORD");
+        }
+
+        String username = parts[0].trim();
+        String password = parts[1].trim();
+        if (username.isEmpty() || password.isEmpty()) {
+            throw new PharmaTrackerException("Username and password must not be empty.");
+        }
+
+        return isRegister ? new RegisterCommand(username, password)
+                : new LoginCommand(username, password);
+    }
+
+    private static Command parseSetThreshold(String description) throws PharmaTrackerException {
+        String[] parts = description.trim().split("/threshold", 2);
+        if (parts.length != 2) {
+            throw new PharmaTrackerException("Invalid format! Use: set-threshold INDEX /threshold NUMBER");
+        }
+
+        try {
+            int index = Integer.parseInt(parts[0].trim());
+            int threshold = Integer.parseInt(parts[1].trim());
+            return new SetThresholdCommand(index, threshold);
+        } catch (NumberFormatException e) {
+            throw new PharmaTrackerException("Invalid format! INDEX and threshold must be whole numbers.");
+        }
+    }
+
+    private static Command parseAcknowledgeAlert(String description) throws PharmaTrackerException {
+        try {
+            int index = Integer.parseInt(description.trim());
+            return new AcknowledgeAlertCommand(index);
+        } catch (NumberFormatException e) {
+            throw new PharmaTrackerException("Invalid format! Use: ack-alert ALERT_INDEX");
+        }
+    }
+
+    /**
+     * Extracts the value of a flag from the command arguments.
+     *
+     * @param args The full command arguments string.
+     * @param flag The flag to extract (e.g., "/q", "/c").
+     * @param nextFlag The next flag that marks the end of this flag's value (null if at end).
+     * @return The value associated with the flag, or null if flag not found.
+     */
+    private static String extractFlagValue(String args, String flag, String nextFlag) {
+        int flagIndex = args.indexOf(flag);
+        if (flagIndex == -1) {
+            return null;
+        }
+
+        int startIndex = flagIndex + flag.length();
+        int endIndex = args.length();
+
+        if (nextFlag != null) {
+            int nextFlagIndex = args.indexOf(nextFlag, startIndex);
+            if (nextFlagIndex != -1) {
+                endIndex = nextFlagIndex;
+            }
+        }
+
+        return args.substring(startIndex, endIndex).trim();
     }
 }

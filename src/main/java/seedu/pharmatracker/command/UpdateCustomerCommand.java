@@ -2,6 +2,7 @@ package seedu.pharmatracker.command;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.ArrayList;
 
 import seedu.pharmatracker.customer.Customer;
 import seedu.pharmatracker.customer.CustomerList;
@@ -22,9 +23,11 @@ public class UpdateCustomerCommand extends Command {
     private final String name;
     private final String phone;
     private final String address;
+    private final ArrayList<String> allergies;
 
     /**
-     * Constructs an UpdateCustomerCommand. Pass {@code null} for any field that should not be updated.
+     * Constructs an UpdateCustomerCommand without allergy update.
+     * Pass {@code null} for any field that should not be updated.
      *
      * @param index   1-based index of the customer to update.
      * @param name    New name, or null to leave unchanged.
@@ -36,6 +39,25 @@ public class UpdateCustomerCommand extends Command {
         this.name = name;
         this.phone = phone;
         this.address = address;
+        this.allergies = null;
+    }
+
+    /**
+     * Constructs an UpdateCustomerCommand. Pass {@code null} for any field that should not be updated.
+     *
+     * @param index    1-based index of the customer to update.
+     * @param name     New name, or null to leave unchanged.
+     * @param phone    New phone number, or null to leave unchanged.
+     * @param address  New address, or null to leave unchanged.
+     * @param allergies New allergy list (replaces existing), or null to leave unchanged.
+     */
+    public UpdateCustomerCommand(int index, String name, String phone,
+                                 String address, ArrayList<String> allergies) {
+        this.index = index;
+        this.name = name;
+        this.phone = phone;
+        this.address = address;
+        this.allergies = allergies;
     }
 
     @Override
@@ -50,8 +72,8 @@ public class UpdateCustomerCommand extends Command {
             return;
         }
 
-        if (name == null && phone == null && address == null) {
-            System.out.println("No fields provided to update! Use /n, /p, or /a flags.");
+        if (name == null && phone == null && address == null && allergies == null) {
+            System.out.println("No fields provided to update! Use /n, /p, /addr, or /allergy flags.");
             return;
         }
 
@@ -65,6 +87,9 @@ public class UpdateCustomerCommand extends Command {
         }
         if (address != null) {
             customer.setAddress(address);
+        }
+        if (allergies != null) {
+            customer.setAllergies(allergies);
         }
 
         ui.printUpdatedCustomerMessage(customer);

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 public class Inventory {
     private ArrayList<Medication> medications;
     private int medicationCount;
+    private DispenseLog dispenseLog;
 
     /**
      * Constructs an empty {@code Inventory}.
@@ -17,6 +18,7 @@ public class Inventory {
     public Inventory() {
         this.medications = new ArrayList<>();
         this.medicationCount = 0;
+        this.dispenseLog = new DispenseLog();
     }
 
     /**
@@ -76,6 +78,25 @@ public class Inventory {
     }
 
     /**
+     * Returns the dispense log associated with this inventory.
+     *
+     * @return The {@link DispenseLog} containing all recorded dispense events.
+     */
+    public DispenseLog getDispenseLog() {
+        return dispenseLog;
+    }
+
+    /**
+     * Replaces the dispense log (used when loading from storage).
+     *
+     * @param dispenseLog The log to set.
+     */
+    public void setDispenseLog(DispenseLog dispenseLog) {
+        assert dispenseLog != null : "DispenseLog must not be null";
+        this.dispenseLog = dispenseLog;
+    }
+
+    /**
      * Prints a formatted list of all medications currently in the inventory to the console.
      * If the inventory is empty, prints a notification message instead.
      */
@@ -92,6 +113,33 @@ public class Inventory {
                     + " | Expiry: " + med.getExpiryDate()
                     + " | Tag: " + med.getTag());
         }
+    }
+
+    /**
+     * Checks if a medication already exists in the list.
+     * Note that a medication is not considered a duplicate if it has the same details but a different expiry date.
+     *
+     * @param name       The name of the medication.
+     * @param dosage     The strength or dosage of the medication.
+     * @param expiryDate The expiration date in YYYY-MM-DD format.
+     * @return true if the medication already exists, false otherwise.
+     */
+    public boolean containsMedication(String name, String dosage, int quantity, String expiryDate) {
+        if (name == null || dosage == null || expiryDate == null) {
+            return false;
+        }
+
+        for (Medication med : medications) {
+            if (name.equalsIgnoreCase(med.getName()) &&
+                    med.getDosage().equalsIgnoreCase(dosage) &&
+                    med.getQuantity() == quantity &&
+                    med.getExpiryDate().equalsIgnoreCase(expiryDate)) {
+                return true;
+            }
+        }
+
+        return false;
+
     }
 
 }
