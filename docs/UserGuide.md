@@ -134,7 +134,7 @@ Removes a medication from the inventory.
 **Format:** `delete INDEX`
 
 - Deletes the medication at the specified `INDEX`. 
-- The `INDEX` refers to the index number shown in the **most recently displayed** medication list.
+- The `INDEX` refers to the index number shown in the **most recently displayed** medication list (i.e. after running the `list` command).
 - The index **must be a positive integer**, and must not exceed the number of medications currently in the list.
 
 **Examples:**
@@ -145,8 +145,26 @@ Removes a medication from the inventory.
 ```
 ____________________________________________________________
 You have deleted the following medication:
-  Name: Paracetamol | Dosage: 500mg | Qty: 100 | Exp: 2026-12-31 | Tag: painkiller
-You now have 6 medications in your inventory!
+========================================
+MEDICATION DETAILS
+========================================
+Drug Name:           Cough Syrup
+Strength:            15mg/5ml
+Dosage Form:         Syrup
+Manufacturer:        N/A
+----------------------------------------
+DOSAGE & ADMINISTRATION
+----------------------------------------
+Directions:          Shake well before use
+Frequency:           Every 6 hours
+Route:               Oral
+Max Daily Dose:      N/A
+----------------------------------------
+WARNINGS & PRECAUTIONS
+----------------------------------------
+None
+========================================
+You now have 1 medications in your inventory!
 ____________________________________________________________
 ```
 
