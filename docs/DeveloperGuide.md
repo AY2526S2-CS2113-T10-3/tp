@@ -63,8 +63,6 @@ Beyond the Java Standard Library, no other libraries were used. No code was reus
 4. Run `java -jar pharmatracker.jar` to start the application.
 5. Type a command and press Enter to execute it. Type `help` to see available commands.
 
-> **Note for developers:** Run `.\gradlew run` (Windows) or `./gradlew run` (macOS/Linux) from the project root to launch the app.
-
 ## Design
 
 ### Architecture
@@ -75,17 +73,17 @@ command logic, and saves any modifications to local storage.
 
 The key components of the system are outlined below. 
 
-| Component            | Responsibility                                                                                                                                                      |
-|:---------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `PharmaTracker`      | Initializes the application components and manages the main execution loop (read → parse → execute → save).                                                         |
-| `Parser`             | Analyzes raw input strings from the user and translates them into specific, executable `Command` objects.                                                           |
-| `Command` (abstract) | Defines the required `execute()` contract. Concrete command classes (e.g., `AddCommand`, `DispenseCommand`) implement this to interact with the application's data. |
-| `Inventory`          | The in-memory data structure that stores and manages all `Medication` records.                                                                                      |
-| `CustomerList`       | The in-memory data structure that manages registered `Customer` profiles and their dispensing histories.                                                            |
-| `AuthService`        | Manages user registration/login/logout, password verification, and current session state.                                                                            |
-| `RestockAlertService`| Evaluates stock against medication thresholds, tracks active alerts, and maintains alert history.                                                                    |
-| `Storage`            | Handles the serialization and deserialization of data to a local text file (`data/pharmatracker.txt`) to ensure data persistence across sessions.                   |
-| `Ui`                 | Manages all interactions with the user, including reading terminal inputs and printing formatted outputs to the console.                                            |
+| Component            | Responsibility                                                                                                                                                                                                                                                                                                                                      |
+|:---------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `PharmaTracker`      | Initializes the application components and manages the main execution loop (read → parse → execute → save).                                                                                                                                                                                                                                         |
+| `Parser`             | Analyzes raw input strings from the user. It uses a central `PharmaTrackerParser` to identify the command word, and then delegates the heavy lifting to specific sub-parsers (e.g. `AddCommandParser`) and utility classes (e.g. `MedicationParserUtil`) to safely extract and validate parameters before returning an executable `Command` object. |
+| `Command` (abstract) | Defines the required `execute()` contract. Concrete command classes (e.g., `AddCommand`, `DispenseCommand`) implement this to interact with the application's data.                                                                                                                                                                                 |
+| `Inventory`          | The in-memory data structure that stores and manages all `Medication` records.                                                                                                                                                                                                                                                                      |
+| `CustomerList`       | The in-memory data structure that manages registered `Customer` profiles and their dispensing histories.                                                                                                                                                                                                                                            |
+| `AuthService`        | Manages user registration/login/logout, password verification, and current session state.                                                                                                                                                                                                                                                           |
+| `RestockAlertService`| Evaluates stock against medication thresholds, tracks active alerts, and maintains alert history.                                                                                                                                                                                                                                                   |
+| `Storage`            | Handles the serialization and deserialization of application state across multiple dedicated text files (e.g., `data/pharmatracker.txt` for inventory, `data/customers.txt` for profiles, `data/dispense_log.txt` for logs and `data/users.txt` for accounts) to ensure comprehensive data persistence across sessions.                             |
+| `Ui`                 | Manages all interactions with the user, including reading terminal inputs and printing formatted outputs to the console.                                                                                                                                                                                                                            |
 
 The following component diagram provides a high-level overview of how these components relate to one another:
 
