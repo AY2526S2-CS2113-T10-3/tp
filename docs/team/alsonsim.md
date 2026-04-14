@@ -37,7 +37,7 @@ Implemented the core inventory overview command that provides a high-level summa
 - **Visual Cues**: Automatically flags items with a quantity of less than 20 as `[LOW STOCK]` to provide immediate visual priority for replenishment (consistent with the default threshold for the `lowstock` command).
 - **Reference Point**: Displays 1-based indices required for all other medication-based commands like `delete`, `view`, and `dispense`.
 
-#### 3. List Customers (`listcustomers`)
+#### 3. List Customers (`list-customers`)
 
 Implemented a read-only command that displays all registered customers with their customer ID, name, and phone number, along with a total count. Handles the empty-list case with a clear user-facing message.
 
@@ -73,7 +73,7 @@ Implemented two critical bug fixes to ensure the auto restock alert feature beha
 | Section | Contribution |
 |---------|-------------|
 | `list` command | Format, descriptive list of fields (name, dosage, quantity, expiry), and example output with low-stock indicators |
-| `listcustomers` command | Format, both examples (with and without customers), and expected output blocks |
+| `list-customers` command | Format, both examples (with and without customers), and expected output blocks |
 | `restock` command | Format, both examples, and expected output blocks |
 | `dispense` command | Extended format with optional `/c` flag, both examples (with and without customer linking), expected output blocks, and error behaviour description |
 | Command Summary table | Updated with all implemented commands |
@@ -94,6 +94,11 @@ Implemented two critical bug fixes to ensure the auto restock alert feature beha
 - `ListCustomersCommandSequence.puml`
 - `RestockCommandSequence.puml`
 - `DispenseCommandSequence.puml`
+- `AuthenticationSequence.puml`
+- `AutoRestockAlertSequence.puml`
+- `HelpCommandSequence.puml`
+- `ExitCommandSequence.puml`
+- `StorageSequence.puml`
 
 ---
 
@@ -113,21 +118,21 @@ Implemented two critical bug fixes to ensure the auto restock alert feature beha
 
 ### List Customers Feature
 
-The `listcustomers` command retrieves and displays all registered customers with their customer ID, name, and phone number. It is a read-only command that requires no arguments.
+The `list-customers` command retrieves and displays all registered customers with their customer ID, name, and phone number. It is a read-only command that requires no arguments.
 
-**Format:** `listcustomers`
+**Format:** `list-customers`
 
 #### How it works
 
-1. The user enters `listcustomers`.
+1. The user enters `list-customers`.
 2. `PharmaTracker.run()` reads the input and passes it to `Parser.parse()`.
-3. `Parser.parse()` identifies the command word `listcustomers` and returns a new `ListCustomersCommand` object — no arguments are required.
+3. `Parser.parse()` identifies the command word `list-customers` and returns a new `ListCustomersCommand` object — no arguments are required.
 4. `PharmaTracker.run()` calls `ListCustomersCommand.execute()`, which calls `CustomerList.getAllCustomers()` to retrieve the full customer list.
 5. The result is handled via an `alt` branch:
    - If the list is empty, `"No customers registered yet."` is printed and the command returns early.
    - Otherwise, each `Customer` is printed with a 1-based index, their customer ID, name, and phone number, followed by a total count.
 
-![Sequence diagram showing the execution flow of the List Customers Command](images/ListCustomersCommandSequence.png)
+![Sequence diagram showing the execution flow of the List Customers Command](../images/ListCustomersCommandSequence.png)
 
 #### Design Considerations
 
@@ -160,7 +165,7 @@ The `restock` command **additively** increases the stock of an existing medicati
 7. `medication.setQuantity(medication.getQuantity() + quantity)` increments the existing stock.
 8. `Ui` prints the confirmation message showing the medication name, units added, and updated stock total.
 
-![Sequence diagram showing the execution flow of the Restock Command](images/RestockCommandSequence.png)
+![Sequence diagram showing the execution flow of the Restock Command](../images/RestockCommandSequence.png)
 
 #### Design Considerations
 

@@ -1,39 +1,69 @@
 @startuml
-skinparam backgroundColor white
-skinparam sequenceArrowThickness 2
+skinparam ArrowFontStyle plain
 
 actor User
 participant ":PharmaTracker" as PT
-participant ":Parser" as Parser
+participant ":Ui" as Ui
+participant "<<class>>\nPharmaTrackerParser" as Parser
 participant "c:Command" as Cmd
 participant ":AuthService" as Auth
 participant ":Storage" as Storage
-participant ":Ui" as Ui
 
 User -> PT : run()
+activate PT
+
 PT -> Ui : readCommand()
+activate Ui
 Ui --> PT : fullCommand
+deactivate Ui
+
 PT -> Parser : parse(fullCommand)
+activate Parser
 
 alt register USERNAME /p PASSWORD
     Parser --> PT : new RegisterCommand(username, password)
-    PT -> Cmd : execute(inventory, ui, customerList)
-    Cmd -> Auth : register(username, password)
-    Auth --> Cmd : success / validation error
-    Cmd -> Ui : printMessage(result)
 else login USERNAME /p PASSWORD
     Parser --> PT : new LoginCommand(username, password)
-    PT -> Cmd : execute(inventory, ui, customerList)
-    Cmd -> Auth : login(username, password)
-    Auth --> Cmd : success / validation error
-    Cmd -> Ui : printMessage(result)
 else logout
     Parser --> PT : new LogoutCommand()
-    PT -> Cmd : execute(inventory, ui, customerList)
+end
+deactivate Parser
+
+PT -> Cmd : execute(inventory, ui, customerList)
+activate Cmd
+
+alt RegisterCommand
+    Cmd -> Auth : register(username, password)
+    activate Auth
+    Auth --> Cmd : success / validation error
+    deactivate Auth
+    Cmd -> Ui : printMessage(result)
+else LoginCommand
+    Cmd -> Auth : login(username, password)
+    activate Auth
+    Auth --> Cmd : success / validation error
+    deactivate Auth
+    Cmd -> Ui : printMessage(result)
+else LogoutCommand
     Cmd -> Auth : logout()
+    activate Auth
+    Auth --> Cmd : done
+    deactivate Auth
     Cmd -> Ui : printMessage("Logged out successfully")
 end
 
+Cmd --> PT
+deactivate Cmd
+
 PT -> Storage : saveUsers(authService.getUsersSnapshot())
+activate Storage
+Storage --> PT
+deactivate Storage
+
 PT -> Storage : saveSession(authService.getCurrentUsername())
+activate Storage
+Storage --> PT
+deactivate Storage
+
+deactivate PT
 @enduml
