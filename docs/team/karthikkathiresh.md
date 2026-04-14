@@ -20,8 +20,11 @@ fast typists who prefer a CLI workflow over GUI applications.
     * **Technical Highlights**: Implemented `UpdateCommand` to accept an index alongside any combination of optional update flags. Enhanced `Parser` to flexibly extract these parameters. 
 * **Add Customer Feature** (v2.0, [PR #89](https://github.com/AY2526S2-CS2113-T10-3/tp/pull/89)): Registers a new customer profile into the system. This expands the application's scope to a holistic pharmacy management tool, laying the foundation for customer-linked dispensing features.
   * **Technical Highlights**: Implemented `AddCustomerCommand` and updated `Parser` with dedicated extraction methods to parse user inputs safely.
-* **Delete Customer Feature** (v2.0): Enables users to permanently remove a customer from the database by referencing their 1-based index in the customer list.
-  * **Technical Highlights**: Implemented `DeleteCustomerCommand` which has been interfaced with `CustomerList` and `Ui` securely. 
+* **Delete Customer Feature** (v2.0, [PR #107](https://github.com/AY2526S2-CS2113-T10-3/tp/pull/107)): Enables users to permanently remove a customer from the database by referencing their 1-based index in the customer list.
+  * **Technical Highlights**: Implemented `DeleteCustomerCommand` which has been interfaced with `CustomerList` and `Ui` to ensure safe deletion and clear user feedback.
+* **Flexible Date Parsing and Validation** (v2.0.1, [PR #138](https://github.com/AY2526S2-CS2113-T10-3/tp/pull/138)): Implemented a robust date parsing mechanism that accepts multiple date formats from the user. This also enforces strict business rules for medication expiry dates to prevent illogical date entries. 
+  * **Technical Highlights**: Implemented parsing logic within `MedicationParserUtil` using `DateTimeFormatter` to support and normalize formats such as `yyyy-MM-dd`, `d/M/yyyy`, and `d-M-yyyy`. Added active validation rules to reject dates that are already in the past or exceed a realistic 10-year threshold.
+* **Assertion and Logging** (v1.0 - v2.1): Added assertions and `java.util.logging` to `AddCommand`, `DeleteCommand`, `UpdateCommand`, `AddCustomerCommand` and `DeleteCustomerCommand`.
 
 ### Contributions to Testing
 * Wrote unit tests for `AddCommand`, `DeleteCommand`, `UpdateCommand`, `AddCustomerCommand` and `DeleteCustomerCommand` using **JUnit**.
@@ -37,11 +40,13 @@ fast typists who prefer a CLI workflow over GUI applications.
   * Documented the design and execution flow for the medication `add`, `delete`, and `update` commands.
   * Documented the design and execution flow for the customer `add` and `delete` commands.
 * **UML Diagrams:** 
-  * Created sequence diagrams for the medication and customer management commands to illustrate the execution flow. 
+  * Created sequence diagrams for the medication and customer management commands to illustrate the execution flow. These were done for `AddCommand`, `DeleteCommand`, `UpdateCommand`, `AddCustomerCommand` and `DeleteCustomerCommand`.
   * Designed class diagrams showing the structure and relationships of the Medication and Customer components within the Model.
 
 ### Project Management & Team-Based Tasks
-* Managed releases `[v1.0]` - `[v2.0.1]` on GitHub. This includes publishing the `PharmaTracker.jar` file, `UserGuide` and `DeveloperGuide`.
+* Set up the team GitHub organization and repository (along with Alson)
+* Reviewed PRs from all teammates from `v1.0` to `v2.1`.
+* Managed releases `[v1.0]` - `[v2.0]` on GitHub. This includes publishing the `PharmaTracker.jar` file, `UserGuide` and `DeveloperGuide`.
 * Maintained the issue tracker by creating and assigning tasks for the `[v1.0]` milestone.
 
 ### Community & Tooling
